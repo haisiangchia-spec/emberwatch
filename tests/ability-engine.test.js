@@ -293,7 +293,7 @@ assert.equal(mixedAttack[2].step.condition,'immobilize');
 assert.deepEqual(JSON.parse(JSON.stringify(mixedAttack)),mixedAttack);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'shield',value:1,optional:true},{type:'attack',value:3}
-],{targetId:'e0'}),/Only one attack/);
+],{targetId:'e0'}),/Attack must follow mandatory self effects/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'shield',value:Infinity},{type:'attack',value:3}
 ],{targetId:'e0'}),/Invalid pre-attack effect/);
