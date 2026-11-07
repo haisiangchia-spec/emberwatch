@@ -42,5 +42,31 @@
    legal.sort((a,b)=>a.cost-b.cost||a.r-b.r||a.q-b.q);
    return legal.length?{q:legal[0].q,r:legal[0].r,cost:legal[0].cost}:null;
  }
- return Object.freeze({choose,compare,rangedRetreat});
+ // Position choice for an already selected primary focus. Candidate target
+ // IDs must contain that focus; other targets are not re-focused. Every entry
+ // describes one reachable attack hex after pathfinding and LOS.
+ function multiTargetPosition({focusId,maxTargets,move,candidates}){
+   if(typeof focusId!=='string'||!focusId||!Number.isInteger(maxTargets)||
+      maxTargets<2||!Number.isFinite(move)||move<0||!Array.isArray(candidates))
+      throw Error('Invalid multi-target positioning request');
+   const legal=candidates.filter(c=>c&&Number.isInteger(c.q)&&Number.isInteger(c.r)&&
+      Number.isFinite(c.cost)&&c.cost>=0&&c.cost<=move&&
+      Number.isInteger(c.negative)&&c.negative>=0&&!c.occupied&&
+      Array.isArray(c.targets)&&c.targets.some(t=>t.id===focusId));
+   const scored=legal.map(c=>{
+     const selected=c.targets.slice().sort((a,b)=>
+       (a.id===focusId?-1:b.id===focusId?1:0)||
+       (a.seat??999)-(b.seat??999)||String(a.id).localeCompare(String(b.id)))
+       .slice(0,maxTargets);
+     return {q:c.q,r:c.r,cost:c.cost,negative:c.negative,
+       targets:selected.map(t=>t.id),count:selected.length,
+       disadvantage:selected.filter(t=>t.disadvantaged).length};
+   });
+   // FAQ: preserve focus, minimize negative hexes, maximize additional targets,
+   // minimize disadvantaged attacks, then minimize movement cost.
+   scored.sort((a,b)=>a.negative-b.negative||b.count-a.count||
+     a.disadvantage-b.disadvantage||a.cost-b.cost||a.r-b.r||a.q-b.q);
+   return scored[0]||null;
+ }
+ return Object.freeze({choose,compare,rangedRetreat,multiTargetPosition});
 });
