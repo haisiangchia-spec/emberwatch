@@ -1879,3 +1879,79 @@ test('monster focus counts negative terrain crossed during free icy slide',async
  expect(st.modifiers.monsters.discard).toHaveLength(0);
  expect(errors).toEqual([]);
 });
+
+test('hero queued route stops safely if an enemy occupies its next hex after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,3];
+  s.players[0].q=1;s.players[0].r=4;
+  s.enemies=[{id:'new-blocker',name:'Ash Raider',hp:9,maxHp:9,q:2,r:4,conditions:{}}];
+  s.walls=[];s.rocks=[];s.traps=[];s.hazardous=[];
+  s.combatQueue={version:1,owner:'hero',index:1,paused:true,pauseReason:'terrainDamage',
+   events:[
+     {type:'heroMoveStep',actorId:'p0',hex:{q:1,r:4},movementMode:'walk',finalStep:false},
+     {type:'heroMoveStep',actorId:'p0',hex:{q:2,r:4},movementMode:'walk',finalStep:false},
+     {type:'heroMoveStep',actorId:'p0',hex:{q:3,r:4},movementMode:'walk',finalStep:true},
+     {type:'heroActionComplete',actorId:'p0',action:{
+       kind:'move',which:'bottom',cardIndex:0,asBasic:true,value:3}}
+   ]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Terrain',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([1,4]);
+ expect(st.enemies[0].id).toBe('new-blocker');
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingDamage).toBeNull();
+ expect(st.turnIndex).toBe(0);
+ expect(st.journal.some(x=>x.includes('planned hex is no longer accessible'))).toBe(true);
+ expect(errors).toEqual([]);
+});
+
+test('monster stops an old planned icy chain when a slide hex becomes blocked',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'enemy',id:'Ash Raider',initiative:20},
+    {type:'player',id:0,initiative:30}];s.turnIndex=0;
+  s.players[0].q=5;s.players[0].r=3;
+  for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.scenario.revealed=[0,1,2];
+  s.enemies=[{id:'blocked-ice',name:'Ash Raider',hp:9,maxHp:9,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[[3,3]];s.icy=[[2,3],[3,3]];s.traps=[];s.hazardous=[];s.difficult=[];
+  s.monsterTurnPlans={'blocked-ice':{skip:false,targetId:'p0',stop:{q:4,r:3},
+    focused:true,spec:{move:1,attack:2,range:1},
+    path:[{q:1,r:3},{q:2,r:3},{q:3,r:3,slide:true},{q:4,r:3,slide:true}]}};
+  s.monsterReveals={'Ash Raider':{name:'Blocked Ice',initiative:20,abilities:[
+    {type:'move',value:1},{type:'attack',value:2,range:1}]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  s.combatQueue={version:1,owner:'monster',index:2,paused:true,pauseReason:'damage',
+   events:[
+    {type:'monsterStart',actorId:'blocked-ice',monsterType:'Ash Raider'},
+    {type:'monsterFocus',actorId:'blocked-ice',monsterType:'Ash Raider'},
+    {type:'monsterMove',actorId:'blocked-ice',monsterType:'Ash Raider',stepIndex:0,
+      step:{type:'move',value:1}},
+    {type:'monsterAttack',actorId:'blocked-ice',monsterType:'Ash Raider',stepIndex:1,
+      step:{type:'attack',value:2,range:1}},
+    {type:'monsterFinish',actorId:'blocked-ice',monsterType:'Ash Raider'}]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Prior attack',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,3]);
+ expect(st.modifiers.monsters.discard).toHaveLength(0);
+ expect(st.journal.some(x=>x.includes('newly blocked movement hex'))).toBe(true);
+ expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
