@@ -330,3 +330,34 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'attack',value:4},{type:'retaliate',value:-1}
 ],{targetId:'e0'}),/Invalid post-attack effect/);
 console.log('F2 post-hit saved suffix compilation and replay safety assertions passed');
+
+
+const moveAction={kind:'move',value:4,movementMode:'walk',
+ which:'bottom',cardIndex:3,asBasic:false};
+const moveEvents=abilities.compileHeroQueue('p0',moveAction,[
+ {type:'move',value:'action'},
+ {type:'shield',value:1,duration:'round',optional:true}
+],{movePath:[{q:0,r:3},{q:0,r:2}],destination:{q:0,r:2}});
+assert.deepEqual(moveEvents.map(e=>e.type),[
+ 'heroMoveStep','heroMoveStep','heroAbilityEffect','heroActionComplete']);
+assert.equal(moveEvents[0].finalStep,false);
+assert.equal(moveEvents[1].finalStep,true);
+assert.equal(moveEvents[2].effect.optional,true);
+assert.deepEqual(JSON.parse(JSON.stringify(moveEvents)),moveEvents);
+assert.deepEqual(abilities.compileHeroQueue('p0',moveAction,
+ [{type:'move',value:'action'}],{
+ movePath:[{q:0,r:3}],destination:{q:0,r:3}
+}).map(e=>e.type),['heroMoveStep','heroActionComplete']);
+assert.throws(()=>abilities.compileHeroQueue('p0',moveAction,
+ [{type:'move',value:'action'}]),/planned route/);
+assert.throws(()=>abilities.compileHeroQueue('p0',moveAction,
+ [{type:'move',value:'action'}],{
+ movePath:[{q:0,r:3}],destination:{q:2,r:3}
+}),/end at destination/);
+assert.throws(()=>abilities.compileHeroQueue('p0',moveAction,[
+ {type:'shield',value:1},{type:'move',value:2}
+],{movePath:[{q:0,r:3}],destination:{q:0,r:3}}),/Move must precede/);
+assert.throws(()=>abilities.compileHeroQueue('p0',moveAction,[
+ {type:'move',value:2},{type:'attack',value:3}
+],{movePath:[{q:0,r:3}],destination:{q:0,r:3}}),/Move must precede/);
+console.log('F2 compiled hero movement paths and effect suffix conformance passed');
