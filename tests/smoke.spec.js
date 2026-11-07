@@ -2279,3 +2279,62 @@ test('F2 ordered linked effects persist a null attack roll without granting cond
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 live optional Shield executes after reload without replaying Guard',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:72}];s.turnIndex=0;
+  s.players[0].picked=[0,4];s.players[0].guard=0;s.players[0].active=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].guard).toBe(3);
+ expect(st.players[0].active).toHaveLength(0);
+ expect(st.combatQueue.pauseReason).toBe('optionalAbility');
+ expect(st.pendingAbilityChoice.queueIndex).toBe(1);
+ expect(st.combatQueue.index).toBe(2);
+ await page.reload();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].guard).toBe(3);
+ expect(st.players[0].active.filter(x=>x.type==='shield'&&x.value===1)).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains 3 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.pendingAbilityChoice??null).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ await page.reload();
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.players[0].active.filter(x=>x.type==='shield')).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
+
+test('F2 live optional Shield can be skipped after reload without replaying Guard',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:72}];s.turnIndex=0;
+  s.players[0].picked=[0,4];s.players[0].guard=0;s.players[0].active=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ await page.reload();
+ await page.locator('#skipAbility').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].guard).toBe(3);
+ expect(st.players[0].active).toHaveLength(0);
+ expect(st.journal.filter(x=>x.includes('gains 3 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('skips optional shield'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingAbilityChoice??null).toBeNull();
+ expect(errors).toEqual([]);
+});
