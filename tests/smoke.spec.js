@@ -2760,3 +2760,76 @@ test('F2 mixed Shield then Attack survives retaliation interruption without repl
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 post-attack Shield optional choice runs only after Hammerfall hit',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:62}];s.turnIndex=0;
+  s.players[0].picked=[5,1];s.players[0].active=[];
+  s.modifiers.heroes[0].draw=[0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:12,maxHp:12,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.players[0].active.filter(e=>e.type==='shield')).toHaveLength(0);
+ expect(st.combatQueue.pauseReason).toBe('optionalAbility');
+ expect(st.combatQueue.events.map(e=>e.type)).toEqual([
+  'heroAbilityEffect','heroActionComplete']);
+ await page.reload();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 retaliation interrupt precedes post-hit Shield choice and resumes once',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:62}];s.turnIndex=0;
+  s.players[0].picked=[5,1];s.players[0].active=[];
+  s.modifiers.heroes[0].draw=[0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:12,maxHp:12,conditions:{},
+   active:[{type:'retaliate',value:2,range:1,duration:'round'}]}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(e=>e.type==='shield')).toHaveLength(0);
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(e=>e.type==='shield')).toHaveLength(0);
+ expect(st.combatQueue.pauseReason).toBe('optionalAbility');
+ await page.reload();
+ await page.locator('#skipAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(e=>e.type==='shield')).toHaveLength(0);
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('skips optional shield'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
