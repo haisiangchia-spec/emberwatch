@@ -16,7 +16,7 @@ const MONSTER_ABILITIES={
  'Ash Raider':[
   {name:'Blade Charge',initiative:19,move:1,attack:0,range:0,shuffle:false},
   {name:'Cautious Advance',initiative:58,move:0,attack:0,range:0,shuffle:false},
-  {name:'Savage Lunge',condition:'wound',initiative:28,move:1,attack:1,range:0,shuffle:false},
+  {name:'Savage Lunge',condition:'wound',initiative:28,move:1,attack:1,range:0,shuffle:false,abilities:[{type:'move',value:3},{type:'attack',value:3,range:1,condition:'wound'}]},
   {name:'Weary Swing',initiative:78,move:-1,attack:1,range:0,shuffle:false},
   {name:'Quick Cut',condition:'poison',initiative:13,move:0,attack:-1,range:0,shuffle:false},
   {name:'Regroup',initiative:83,move:0,attack:0,range:0,shuffle:true}
@@ -98,7 +98,7 @@ function drawMonsterAbility(type){const deck=state.monsterDecks[type];if(!deck.d
  if(ability.shuffle){deck.draw=shuffled([...deck.draw,...deck.discard]);deck.discard=[]}
  return {...ability,type};
 }
-function drawRoundMonsters(){state.monsterReveals={};const present=[...new Set(state.enemies.map(e=>e.name))];for(const type of present){const card=drawMonsterAbility(type);state.monsterReveals[type]=card;log(type+' reveals '+card.name+' (initiative '+card.initiative+', Move '+(monsterProfile({name:type}).move+card.move)+', Attack '+(monsterProfile({name:type}).attack+card.attack)+', Range '+(monsterProfile({name:type}).range+card.range)+').')}}
+function drawRoundMonsters(){state.monsterReveals={};const present=[...new Set(state.enemies.map(e=>e.name))];for(const type of present){const card=drawMonsterAbility(type);state.monsterReveals[type]=card;log(type+' reveals '+card.name+' (initiative '+card.initiative+', '+window.EmberwatchAbilities.monsterSteps(monsterProfile({name:type}),card).map(x=>x.type+' '+x.value+(x.range?' range '+x.range:'')).join(' · ')+').')}}
 function cleanupModifiers(){for(const deck of [...state.modifiers.heroes,state.modifiers.monsters])if(deck.reshuffle){deck.draw=shuffled([...deck.draw,...deck.discard]);deck.discard=[];deck.reshuffle=false}}
 const KEY='emberwatch_save_v1';let state=null,seat=0,mode='offline',db=null,roomCode='',roomRef=null,unsubscribe=null,remoteBusy=false,ui={selected:[],initiative:0,topChoice:0,actionMode:null,step:0,actions:[],actor:null};const $=x=>document.getElementById(x);const clone=x=>JSON.parse(JSON.stringify(x));const toCube=p=>{const x=p.q-(p.r-(p.r&1))/2,z=p.r;return {x,y:-x-z,z}};const axialDist=(a,b)=>{let A=toCube(a),B=toCube(b);return Math.max(Math.abs(A.x-B.x),Math.abs(A.y-B.y),Math.abs(A.z-B.z))};const tileKey=(q,r)=>q+','+r;const directions=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
 // The original Ashen Pass remains supported as a legacy save. New games use the three-chamber Cinder Vault.
@@ -487,7 +487,7 @@ function monsterRoutes(monster){
 }
 function characterInitiative(p){const c=state.order.find(x=>x.type==='player'&&state.players[x.id]?.id===p.id);return c?.initiative??99}
 function monsterPlan(monster){
- const base=monsterProfile(monster),ability=state.monsterReveals?.[monster.name]||{move:0,attack:0,range:0};const spec={move:Math.max(0,base.move+ability.move),attack:Math.max(0,base.attack+ability.attack),range:Math.max(1,base.range+ability.range)},routes=monsterRoutes(monster),characters=state.players.filter(p=>p.hp>0&&!p.exhausted);
+ const base=monsterProfile(monster),ability=state.monsterReveals?.[monster.name]||{move:0,attack:0,range:0};const script=window.EmberwatchAbilities.monsterSteps(base,ability),moveStep=script.find(x=>x.type==='move'),attackStep=script.find(x=>x.type==='attack'),spec={move:moveStep?.value??0,attack:attackStep?.value??0,range:attackStep?.range??1},routes=monsterRoutes(monster),characters=state.players.filter(p=>p.hp>0&&!p.exhausted);
  if(!characters.length)return null;
  // Find reachable unoccupied hexes from which each potential focus can be attacked.
  // In range but behind a wall is not an attack position.
@@ -514,7 +514,7 @@ function monsterPlan(monster){
  return {spec,routes,target:chosen.target,goal:chosen.pos,path,stop,spent};
 }
 function enemyTurn(type){
- const revealed=state.monsterReveals[type],enemies=state.enemies.filter(e=>e.name===type);
+ const revealed=state.monsterReveals[type],script=window.EmberwatchAbilities.monsterSteps(monsterProfile({name:type}),revealed),attackScript=script.find(x=>x.type==='attack'),enemies=state.enemies.filter(e=>e.name===type);
  if(state.enemyCursor===0)log(type+' acts: '+revealed.name+' (initiative '+revealed.initiative+').');
  for(;state.enemyCursor<enemies.length;state.enemyCursor++){
   const enemy=enemies[state.enemyCursor];if(enemy.hp<=0)continue;
@@ -528,7 +528,7 @@ function enemyTurn(type){
    const roll=attackDamage(plan.spec.attack,state.modifiers.monsters);
    log(enemy.name+' attacks '+target.name+' ('+modifierLabel(roll.mod)+').');
    unitEnd(enemy);state.enemyCursor++;
-   if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,sourceId:enemy.id,attack:true,condition:revealed.condition}))return;
+   if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,sourceId:enemy.id,attack:true,condition:attackScript?.condition||revealed.condition}))return;
    state.enemyCursor--;
   }else{log(enemy.name+' has no attack in range.');unitEnd(enemy)}
  }
