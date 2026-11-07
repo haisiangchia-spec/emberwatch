@@ -806,3 +806,68 @@ test('queued hero healing restores HP and infuses its element once',async ({page
  expect(st.journal.filter(x=>x.includes('LIGHT infused'))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('queued hero attack resumes forced Push after reload without drawing modifier twice',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0,0];
+  s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{},
+    active:[{type:'retaliate',value:2,range:1,duration:'round'}]}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue?.paused).toBe(true);
+ expect(st.combatQueue?.index).toBe(1);
+ expect(st.pendingHeroChoice?.targetId).toBe('e0');
+ const hp=st.enemies[0].hp,used=st.modifiers.heroes[0].discard.length;
+ await page.reload();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(hp);
+ expect(st.modifiers.heroes[0].discard.length).toBe(used);
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,4]);
+ expect(st.pendingDamage).toBeNull();
+ expect(st.pendingHeroChoice).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('skipping a queued Push after reload still triggers Retaliate only once',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0,0];
+  s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{},
+    active:[{type:'retaliate',value:2,range:1,duration:'round'}]}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await page.reload();
+ await page.locator('#cancelTarget').click();
+ await expect(page.locator('#damageChoice')).toContainText('retaliation');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue?.paused).toBe(true);
+ expect(st.pendingHeroChoice).toBeNull();
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(st.players[0].maxHp-2);
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
