@@ -396,6 +396,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.13.0 mixed self-effect then terminal attack
+
+- The data-driven hero compiler supports **mandatory self effects before a terminal Attack**, including multiple ordered Shield/Retaliate/Infuse instructions followed by the standard attack hit, linked effects and post-hit continuation. The compiler rejects optional prefix steps and any instructions after Attack until the continuation protocol supports them safely.
+- The original Vanguard demo *Shield Rush* now uses an explicit top sequence: Shield 1 (round) followed by Attack 3 (range 1). Live target selection carries this sequence into the compiler; previous/basic attacks retain their old behavior through the same compiler.
+- Attack execution continues to use the existing modifier draw, target-by-target behavior, Push/Pull choices and retaliation interruption. Browser and unit regressions verify serialization, exactly-once Shield and modifier draws, and reload during retaliation.
+- **Remaining F2 gaps:** mixed attacks with *post-hit* steps and optional/targeted prefixes, generic movement compilation and the full class ability schema. This is not F2 closure.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
