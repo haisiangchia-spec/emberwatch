@@ -144,3 +144,70 @@ test('campaign levels increase max HP on the next scenario', async ({ page }) =>
   expect(hp).toBe(18);
   expect(errors).toEqual([]);
 });
+
+
+test('top and bottom actions are independent of initiative card', async ({ page }) => {
+  await openCleanGame(page);
+  const cards = page.locator('#actionUI button[data-card]');
+  await cards.nth(0).click();
+  await cards.nth(1).click();
+  await page.locator('#topChoice').selectOption('1');
+  await page.locator('#initChoice').selectOption('0');
+  await page.locator('#ready').click();
+  const p = await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+  expect(p.picked).toEqual([1,0]);
+  expect(p.initChoice).toBe(1);
+  expect(p.ready).toBe(true);
+});
+
+test('long rest commits initiative 99, heals, and loses chosen discard card', async ({ page }) => {
+  await openCleanGame(page);
+  await page.evaluate(() => {
+    const key='emberwatch_save_v1';
+    const s=JSON.parse(localStorage.getItem(key));
+    const p=s.players[0];
+    s.round=2;
+    p.hand=[0,1,2,3];
+    p.discard=[4,5];
+    p.hp=9;
+    localStorage.setItem(key,JSON.stringify(s));
+  });
+  await page.reload();
+  await page.locator('#longRestCard').selectOption('5');
+  await page.locator('#longRest').click();
+  const before=await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+  expect(before.resting).toBe(true);
+  expect(before.longRestLoss).toBe(5);
+  for (let n=0;n<3;n++){
+    const cards=page.locator('#actionUI button[data-card]');
+    await cards.nth(0).click();
+    await cards.nth(1).click();
+    await page.locator('#ready').click();
+  }
+  const result=await page.evaluate(() => {
+    const s=JSON.parse(localStorage.getItem('emberwatch_save_v1'));
+    return {p:s.players[0],order:s.order,round:s.round};
+  });
+  expect(result.order.some(x=>x.type==='player'&&x.id===0&&x.initiative===99)).toBe(true);
+  expect(result.p.lost).toContain(5);
+  expect(result.p.hand).toContain(4);
+  expect(result.p.discard).not.toContain(4);
+  expect(result.p.hp).toBeGreaterThanOrEqual(9);
+});
+
+test('short rest loses one discarded card and returns the remainder to hand',async ({page})=>{
+  await openCleanGame(page);
+  await page.evaluate(()=>{
+    const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));s.round=2;
+    s.players[0].hand=[0,1,2];s.players[0].discard=[3,4,5];
+    localStorage.setItem(key,JSON.stringify(s));
+  });
+  await page.reload();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#rest').click();
+  const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+  expect(p.discard).toHaveLength(0);
+  expect(p.lost).toHaveLength(1);
+  expect(p.hand).toHaveLength(5);
+  expect([3,4,5]).toContain(p.lost[0]);
+});
