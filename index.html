@@ -1,7 +1,7 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwatch v0.9.3 — Shared Combat Resolution</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwatch v0.10.0 — Combat Queue</title><style>
 :root{color-scheme:dark;--bg:#101a22;--panel:#1d2b34;--panel2:#263a44;--gold:#f0bd69;--text:#f5f0e8;--muted:#a6bac2;--line:#47606b;--blue:#7fc7da}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#29424b,#101a22 65%);font:14px/1.4 system-ui,Segoe UI,sans-serif;color:var(--text)}button,input,select,textarea{font:inherit}button{background:#375363;color:white;border:1px solid #63808a;padding:9px 12px;border-radius:6px;cursor:pointer}button:hover:not(:disabled){background:#4d7180}button:disabled{opacity:.35;cursor:not-allowed}button.primary{background:#936635;border-color:var(--gold)}button.active{outline:2px solid var(--gold);background:#875b30}button.small{padding:5px 8px;font-size:12px}input,select,textarea{background:#10242d;border:1px solid #52717f;border-radius:5px;padding:8px;color:#fff}h1,h2,h3{margin:.2em 0 .5em;font-family:Georgia,serif;letter-spacing:.04em}h1{font-size:29px;color:var(--gold)}h2{font-size:18px;color:#ffdaa0}h3{font-size:15px}p{margin:6px 0 12px}.muted,.hint{color:var(--muted)}.wrap{max-width:1540px;margin:auto;padding:16px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px}.layout{display:grid;grid-template-columns:minmax(480px,1fr) 370px;gap:14px;margin-top:14px}.panel{background:rgba(26,42,50,.95);border:1px solid #48616b;border-radius:10px;padding:14px;box-shadow:0 10px 25px #0003}.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mapbox{overflow:auto;min-height:510px;display:flex;justify-content:center;align-items:flex-start;background:radial-gradient(circle at center,#243a41,#14232c);border-radius:8px;border:1px solid #435b62}.mapbox svg{min-width:620px;max-width:100%;height:auto;touch-action:manipulation}svg .tile{stroke:#72858a;stroke-width:1.7;cursor:pointer}svg .tile:hover{stroke:#ffe1a3;stroke-width:3}svg .tile.selected{stroke:var(--gold);stroke-width:4}svg .coord{fill:#c7d6d7;font:10px system-ui;pointer-events:none;opacity:.55}svg .unit{pointer-events:none;stroke:#132127;stroke-width:2.5}svg .unit-label{font:bold 17px system-ui;fill:#0c1b25;pointer-events:none;text-anchor:middle;dominant-baseline:middle}svg .hp{fill:#fff;font:bold 11px system-ui;pointer-events:none;text-anchor:middle}.character{border:1px solid #45616a;border-radius:8px;padding:9px;margin:7px 0;background:#233841}.character.current{border-color:var(--gold)}.charhead{display:flex;justify-content:space-between;gap:8px;align-items:center}.stats{color:#cadce1;font-size:12px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ability{min-height:132px;text-align:left;display:flex;flex-direction:column;gap:5px;background:linear-gradient(145deg,#314e57,#21333d);padding:9px;border:1px solid #6b8588}.ability strong{color:#ffdb97;font-family:Georgia,serif}.ability .ability-text{font-size:12px}.ability .init{float:right;color:#a5ddeb}.ability.selected{border-color:#f8d08d;background:#5b4831}.tag{display:inline-block;background:#394e57;padding:2px 6px;border-radius:4px;font-size:11px}.section{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.turnbar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.log{height:150px;overflow:auto;background:#12252e;padding:10px;border:1px solid #3e5962;border-radius:6px;font-size:12px}.log div{margin-bottom:4px}.modalbg{position:fixed;inset:0;background:#050d12dd;z-index:10;display:flex;justify-content:center;align-items:center;padding:15px}.modal{max-height:92vh;overflow:auto;max-width:770px;width:100%;background:#20343e;border:1px solid #83979a;border-radius:12px;padding:25px}.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}.status{color:#f1c978}.pill{display:inline-block;border:1px solid #52717a;border-radius:18px;padding:4px 9px;margin-right:5px;font-size:12px}.sidebar{min-width:0}.room{font-weight:700;letter-spacing:2px;color:var(--gold)}.help{font-size:12px;color:#aac0c5}.footer{margin-top:12px;color:#91a5ac;font-size:12px}@media(max-width:950px){.layout{grid-template-columns:1fr}.mapbox{min-height:360px}.sidebar{order:2}}@media(max-width:560px){.wrap{padding:9px}.panel{padding:9px}.settings{grid-template-columns:1fr}.modal{padding:14px}.cards{grid-template-columns:1fr 1fr}.ability{padding:6px;min-height:125px;font-size:12px}}
 .reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.reveal{background:#263b44;border:1px solid #59717a;border-radius:7px;padding:9px}.reveal strong{color:#ffdb97}.reveal .init{color:#a5ddeb;float:right}
-</style><script src="engine/abilities.js"></script></head><body><div class="wrap"><header class="top"><div><h1>⚔ EMBERWATCH</h1><div class="muted">Original four-player cooperative hex-crawl · prototype 0.9.3</div></div><div class="controls"><span id="roomLabel" class="room"></span><span id="netStatus" class="status">Offline · hot-seat</span><button id="campaignHub" onclick="showCampaignHub()">Campaign Hub</button><button onclick="showSetup()">Room / Setup</button><button onclick="copySave()">Export Save</button><button onclick="importSave()">Import Save</button></div></header><main class="layout"><section class="panel"><div class="controls" style="justify-content:space-between"><div><h2 id="scenario">The Cinder Vault</h2><div id="phaseInfo" class="muted"></div></div><button id="reset" class="small" onclick="resetGame()">New Scenario</button></div><div class="mapbox"><svg id="board" viewBox="0 0 820 610" role="img" aria-label="Clickable hex grid battle map"></svg></div><div class="help">Click reachable hexes to move or enemy hexes to attack after choosing an action. 🔒 Enter a sealed door to reveal the next room. ✦ Collect the archive seal, defeat the guardian, and reach the exit. Hidden rooms cannot be entered or targeted. Blue = allies; red = enemies; gold = loot; ◆ = obstacles (block walking, not sight); ▰ = walls (block movement and sight); amber = difficult terrain (+1 movement). Allies can be passed through but not landed on. Jump and flying ignore intervening ground obstacles. Targeting requires hex range and a clear corner-to-corner sight line.</div><div class="section"><h3>Scenario objectives</h3><div id="objectives" class="reveal-grid" aria-live="polite"></div></div><div class="section"><h3>Element board</h3><div id="elements" class="reveal-grid"></div><div class="help">Strong → waning → inert at round end. Infusions activate at the end of their action; consumption boosts the specified action.</div></div><div class="section"><h3>Revealed monster abilities</h3><div id="monsterCards" class="reveal-grid"></div></div><div class="section"><h3>Battle journal</h3><div id="log" class="log" aria-live="polite"></div></div></section><aside class="panel sidebar"><h2>Party and actions</h2><div id="party"></div><div id="actionUI" class="section"></div></aside></main><div class="footer">A fan-inspired original tactical prototype. Not affiliated with, endorsed by, or containing official Frosthaven content. Open this file locally for hot-seat play; use Firebase for separate devices.</div></div><div id="overlay" class="modalbg" style="display:none"></div>
+</style><script src="engine/abilities.js"></script><script src="engine/combat-queue.js"></script></head><body><div class="wrap"><header class="top"><div><h1>⚔ EMBERWATCH</h1><div class="muted">Original four-player cooperative hex-crawl · prototype 0.10.0</div></div><div class="controls"><span id="roomLabel" class="room"></span><span id="netStatus" class="status">Offline · hot-seat</span><button id="campaignHub" onclick="showCampaignHub()">Campaign Hub</button><button onclick="showSetup()">Room / Setup</button><button onclick="copySave()">Export Save</button><button onclick="importSave()">Import Save</button></div></header><main class="layout"><section class="panel"><div class="controls" style="justify-content:space-between"><div><h2 id="scenario">The Cinder Vault</h2><div id="phaseInfo" class="muted"></div></div><button id="reset" class="small" onclick="resetGame()">New Scenario</button></div><div class="mapbox"><svg id="board" viewBox="0 0 820 610" role="img" aria-label="Clickable hex grid battle map"></svg></div><div class="help">Click reachable hexes to move or enemy hexes to attack after choosing an action. 🔒 Enter a sealed door to reveal the next room. ✦ Collect the archive seal, defeat the guardian, and reach the exit. Hidden rooms cannot be entered or targeted. Blue = allies; red = enemies; gold = loot; ◆ = obstacles (block walking, not sight); ▰ = walls (block movement and sight); amber = difficult terrain (+1 movement). Allies can be passed through but not landed on. Jump and flying ignore intervening ground obstacles. Targeting requires hex range and a clear corner-to-corner sight line.</div><div class="section"><h3>Scenario objectives</h3><div id="objectives" class="reveal-grid" aria-live="polite"></div></div><div class="section"><h3>Element board</h3><div id="elements" class="reveal-grid"></div><div class="help">Strong → waning → inert at round end. Infusions activate at the end of their action; consumption boosts the specified action.</div></div><div class="section"><h3>Revealed monster abilities</h3><div id="monsterCards" class="reveal-grid"></div></div><div class="section"><h3>Battle journal</h3><div id="log" class="log" aria-live="polite"></div></div></section><aside class="panel sidebar"><h2>Party and actions</h2><div id="party"></div><div id="actionUI" class="section"></div></aside></main><div class="footer">A fan-inspired original tactical prototype. Not affiliated with, endorsed by, or containing official Frosthaven content. Open this file locally for hot-seat play; use Firebase for separate devices.</div></div><div id="overlay" class="modalbg" style="display:none"></div>
 <script type="module">
 const COLORS=['#83cbe1','#b2a5fa','#81d7ab','#e8b67d'];const ROLES=[{name:'Vanguard',hp:14},{name:'Wayfinder',hp:10},{name:'Runesmith',hp:10},{name:'Warden',hp:12}];
 const CARD_LIBRARY=[
@@ -74,7 +74,7 @@ function showCampaignHub(){if(!state)return;const c=state.campaign,locked=mode==
 }
 function ensureV05(st){
  st.version=82;
- st.roundEndIndex??=0;st.pendingDamage??=null;st.pendingAttack??=null;st.enemyCursor??=0;for(const p of st.players){p.spentItems??=[];}
+ st.roundEndIndex??=0;st.pendingDamage??=null;st.pendingAttack??=null;st.enemyCursor??=0;st.combatQueue??=null;for(const p of st.players){p.spentItems??=[];}
  st.campaign=ensureCampaign(st.campaign);
  st.modifiers??={heroes:st.players.map(()=>freshModifier()),monsters:freshModifier()};
  st.modifiers.heroes??=st.players.map(()=>freshModifier());
@@ -248,10 +248,15 @@ function afterLinkedAttack(actor,target,action){
  // at the updated positions, and only while the defender is alive.
  const retaliate=target?window.EmberwatchAbilities.retaliation(target,actor):0;
  if(retaliate>0&&actor.hp>0){
-   state.pendingAttack={attackerIndex:state.players.indexOf(actor),targetId:target.id,action:{...action}};
+   state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
+     {type:'heroAttackContinuation',actorId:actor.id,targetId:target.id,action:clone(action)}
+   ]);
+   // The continuation is queued before the damage prompt, so a reload does
+   // not replay the original attack or its modifier draw.
+   state.combatQueue=window.EmberwatchCombatQueue.pause(state.combatQueue,'damage');
    if(prepareIncomingDamage(state.players.indexOf(actor),retaliate,
-       target.name+' retaliation',{resume:'heroAttack',attack:false,ignorePoison:true,ignoreGuard:true}))return
-   state.pendingAttack=null
+       target.name+' retaliation',{resume:'queue',attack:false,ignorePoison:true,ignoreGuard:true}))return;
+   state.combatQueue=null
  }
  finishAttackTarget(actor,target,action)
 }
@@ -333,6 +338,7 @@ function resolveIncomingDamage(modeChoice,cards=[]){
  if(pd.attack&&p.hp>0&&!p.exhausted)retaliateAgainst(pd.sourceId,pd.heroIndex);
  const source=pd.source;state.pendingDamage=null;state.phase='act';
  if(pd.resume==='enemy'){enemyTurn(pd.monsterType);if(!state.pendingDamage){state.enemyCursor=0;state.turnIndex++;advanceAutomated()}else commit()}
+ else if(pd.resume==='queue'){resumeCombatQueue()}
  else if(pd.resume==='heroStart'){resumeHeroAfterWound(pd.heroIndex)}
  else if(pd.resume==='heroAttack'){resumeHeroAttack()}
  else{commit()}
@@ -452,7 +458,7 @@ function advanceAutomated(){
  if(checkScenarioEnd()){state.phase='end';commit();return}
  if(state.turnIndex>=state.order.length){finishRound();return}
  const c=current();
- if(c.type==='enemy'){state.enemyCursor=0;enemyTurn(c.id);if(state.pendingDamage)return;state.turnIndex++;advanceAutomated();return}
+ if(c.type==='enemy'){startMonsterCombatQueue(c.id);return}
  const actor=state.players[c.id];
  if(actor.hp<=0||actor.exhausted){state.turnIndex++;advanceAutomated();return}
  // Wound damage occurs at the start of the turn even when long resting.
@@ -511,26 +517,79 @@ function monsterPlan(monster){
  }
  return {spec,routes,target:chosen.target,goal:chosen.pos,path,stop,spent};
 }
-function enemyTurn(type){
- const revealed=state.monsterReveals[type],script=window.EmberwatchAbilities.monsterSteps(monsterProfile({name:type}),revealed),attackScript=script.find(x=>x.type==='attack'),enemies=state.enemies.filter(e=>e.name===type);
- if(state.enemyCursor===0)log(type+' acts: '+revealed.name+' (initiative '+revealed.initiative+').');
- for(;state.enemyCursor<enemies.length;state.enemyCursor++){
-  const enemy=enemies[state.enemyCursor];if(enemy.hp<=0)continue;
-  if(!unitStart(enemy)){log(enemy.name+' dies from Wound.');state.enemies=state.enemies.filter(e=>e!==enemy);state.loot.push([enemy.q,enemy.r]);continue}
-  if(hasCondition(enemy,'stun')){log(enemy.name+' is stunned.');unitEnd(enemy);continue}
-  if(revealed.selfCondition)addCondition(enemy,revealed.selfCondition);
-  const plan=monsterPlan(enemy);if(!plan?.target){unitEnd(enemy);continue}
-  if(plan.stop&&(plan.stop.q!==enemy.q||plan.stop.r!==enemy.r)){enemy.q=plan.stop.q;enemy.r=plan.stop.r;log(enemy.name+' moves toward '+plan.target.name+'.')}
-  const target=plan.target;
-  if(target.hp>0&&axialDist(enemy,target)<=plan.spec.range&&lineOfSight(enemy,target)){
+// Each queue event executes at most once. Movement and modifier draws are
+// committed before a damage-choice interruption; resuming advances the cursor.
+function startMonsterCombatQueue(type){
+ const enemies=state.enemies.filter(e=>e.name===type&&e.hp>0);
+ if(!enemies.length){state.turnIndex++;advanceAutomated();return}
+ log(type+' acts: '+state.monsterReveals[type].name+' (initiative '+state.monsterReveals[type].initiative+').');
+ state.combatQueue=window.EmberwatchCombatQueue.create('monster',
+   enemies.map(e=>({type:'monsterTurn',actorId:e.id,monsterType:type})));
+ runCombatQueue()
+}
+function resumeCombatQueue(){
+ const q=state.combatQueue;
+ if(!q||!q.paused){commit();return}
+ state.combatQueue=window.EmberwatchCombatQueue.resume(q);
+ runCombatQueue()
+}
+function runCombatQueue(){
+ while(state.combatQueue){
+   const q=state.combatQueue;
+   const next=window.EmberwatchCombatQueue.next(q);
+   if(next.paused)return;
+   state.combatQueue=next.queue;
+   if(!next.event){
+     state.combatQueue=null;
+     state.turnIndex++;advanceAutomated();return
+   }
+   const event=next.event;
+   if(event.type==='heroAttackContinuation'){
+     const actor=state.players.find(p=>p.id===event.actorId);
+     if(!actor||actor.exhausted||actor.hp<=0){
+       state.combatQueue=null;ui.actionMode=null;
+       if(actor){unitEnd(actor);moveChosenCards(actor)}
+       state.turnIndex++;resetUI();advanceAutomated();return
+     }
+     ui.actionMode=event.action;
+     const target=state.enemies.find(e=>e.id===event.targetId)||{id:event.targetId};
+     state.combatQueue=null;
+     finishAttackTarget(actor,target,ui.actionMode);
+     return
+   }
+   if(event.type==='monsterTurn'){
+     if(executeMonsterQueueEvent(event)){
+       state.combatQueue=window.EmberwatchCombatQueue.pause(state.combatQueue,'damage');
+       commit();
+       return
+     }
+   }
+ }
+}
+function executeMonsterQueueEvent(event){
+ const enemy=state.enemies.find(e=>e.id===event.actorId&&e.hp>0);
+ if(!enemy)return false;
+ const type=event.monsterType,revealed=state.monsterReveals[type];
+ const script=window.EmberwatchAbilities.monsterSteps(monsterProfile({name:type}),revealed);
+ const attackScript=script.find(x=>x.type==='attack');
+ if(!unitStart(enemy)){log(enemy.name+' dies from Wound.');state.enemies=state.enemies.filter(e=>e!==enemy);state.loot.push([enemy.q,enemy.r]);return false}
+ if(hasCondition(enemy,'stun')){log(enemy.name+' is stunned.');unitEnd(enemy);return false}
+ if(revealed.selfCondition)addCondition(enemy,revealed.selfCondition);
+ const plan=monsterPlan(enemy);
+ if(!plan?.target){unitEnd(enemy);return false}
+ if(plan.stop&&(plan.stop.q!==enemy.q||plan.stop.r!==enemy.r)){
+   enemy.q=plan.stop.q;enemy.r=plan.stop.r;log(enemy.name+' moves toward '+plan.target.name+'.')
+ }
+ const target=plan.target;
+ if(target.hp>0&&axialDist(enemy,target)<=plan.spec.range&&lineOfSight(enemy,target)){
    const roll=rollAttack(plan.spec.attack,state.modifiers.monsters,enemy);
    log(enemy.name+' attacks '+target.name+' ('+modifierLabel(roll.mod)+').');
-   unitEnd(enemy);state.enemyCursor++;
-   if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,sourceId:enemy.id,attack:true,condition:attackScript?.condition||revealed.condition,miss:roll.mod==='null'}))return;
-   state.enemyCursor--;
-  }else{log(enemy.name+' has no attack in range.');unitEnd(enemy)}
+   unitEnd(enemy);
+   return prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,
+     {resume:'queue',sourceId:enemy.id,attack:true,
+      condition:attackScript?.condition||revealed.condition,miss:roll.mod==='null'})
  }
- state.enemyCursor=0
+ log(enemy.name+' has no attack in range.');unitEnd(enemy);return false
 }
 function activateTacticalEffects(actor,effects){
  if(!effects?.length)return;
