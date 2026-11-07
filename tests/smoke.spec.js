@@ -201,19 +201,81 @@ test('long rest commits initiative 99, heals, and loses chosen discard card', as
   expect(result.p.hp).toBeGreaterThanOrEqual(9);
 });
 
-test('short rest loses one discarded card and returns the remainder to hand',async ({page})=>{
-  await openCleanGame(page);
-  await page.evaluate(()=>{
-    const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));s.round=2;
-    s.players[0].hand=[0,1,2];s.players[0].discard=[3,4,5];
-    localStorage.setItem(key,JSON.stringify(s));
-  });
-  await page.reload();
-  page.once('dialog',dialog=>dialog.accept());
-  await page.locator('#rest').click();
-  const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
-  expect(p.discard).toHaveLength(0);
-  expect(p.lost).toHaveLength(1);
-  expect(p.hand).toHaveLength(5);
-  expect([3,4,5]).toContain(p.lost[0]);
+
+test('short rest occurs in the end-of-round phase and permits exactly one redraw',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='roundEnd';s.roundEndIndex=0;s.round=2;
+  s.players[0].hand=[0,1,2];s.players[0].discard=[3,4,5];
+  s.players[0].hp=10;s.players[0].maxHp=14;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await expect(page.locator('#phaseInfo')).toContainText('End of round');
+ await page.locator('#restNow').click();
+ const first=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(first.discard).toHaveLength(0);
+ expect(first.lost).toHaveLength(1);
+ expect(first.hand).toHaveLength(5);
+ await page.locator('#redrawRest').click();
+ const second=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(second.hp).toBe(9);
+ expect(second.lost).toHaveLength(1);
+ expect(second.hand).toHaveLength(5);
+ await expect(page.locator('#redrawRest')).toBeDisabled();
+ await page.locator('#finishRest').click();
+ await expect(page.locator('#phaseInfo')).toContainText('Round 3');
+});
+
+test('hero can negate monster damage by losing one eligible hand card',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.players[0].hp=11;
+  s.players[0].picked=[0,1];s.players[0].hand=[0,1,2,3,4,5];
+  s.pendingDamage={heroIndex:0,amount:7,source:'test strike',condition:null,resume:'manual'};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await expect(page.locator('#damageChoice')).toContainText('7');
+ await expect(page.locator('#damageChoice input[data-pool="hand"]')).toHaveCount(4);
+ await page.locator('#damageChoice input[data-pool="hand"][value="2"]').check();
+ await page.locator('#loseHand').click();
+ const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.hp).toBe(11);
+ expect(p.hand).not.toContain(2);
+ expect(p.lost).toContain(2);
+});
+
+test('hero can negate damage using two distinct discarded cards',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.players[0].hp=11;s.players[0].discard=[4,5];
+  s.pendingDamage={heroIndex:0,amount:9,source:'test strike',condition:null,resume:'manual'};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#damageChoice input[data-pool="discard"][value="4"]').check();
+ await page.locator('#damageChoice input[data-pool="discard"][value="5"]').check();
+ await page.locator('#loseDiscard').click();
+ const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.hp).toBe(11);
+ expect(p.discard).toHaveLength(0);
+ expect(p.lost).toEqual([4,5]);
+});
+
+test('taking damage applies damage and can exhaust the hero',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.players[0].hp=3;
+  s.pendingDamage={heroIndex:0,amount:5,source:'test strike',condition:null,resume:'manual'};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.hp).toBe(0);expect(p.exhausted).toBe(true);
 });
