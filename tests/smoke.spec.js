@@ -564,3 +564,18 @@ test('Arc Pulse area anchor selects a two-hex pattern and damages both enemies',
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect(st.enemies.every(e=>e.hp<99)).toBe(true);
 });
+
+test('monster and hero modifier rolls use Strengthen and Muddle selection consistently',async ({page})=>{
+ await openCleanGame(page);
+ const rolls=await page.evaluate(()=>{
+  const deck=()=>({draw:[2,-2],discard:[],reshuffle:false});
+  return {
+   strong:rollAttack(3,deck(),{conditions:{strengthen:true}}).damage,
+   muddled:rollAttack(3,deck(),{conditions:{muddle:true}}).damage,
+   neutral:rollAttack(3,deck(),{conditions:{strengthen:true,muddle:true}}).damage
+  };
+ });
+ expect(rolls.strong).toBe(5);
+ expect(rolls.muddled).toBe(1);
+ expect(rolls.neutral).toBe(1);
+});
