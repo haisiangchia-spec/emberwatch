@@ -1,8 +1,12 @@
-# Emberwatch v0.10.1 — Stepwise Tactical Execution
+# Emberwatch v0.10.2 — Queued Hero Attacks
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Hero attacks now resolve in separate queued hit and post-hit events, with serialized Push/Pull choices that survive a page reload.
+- Retaliate is checked after the target's displacement, and unresolved queue choices cannot be bypassed by ending the turn.
+- The latest code-bearing run passed 37 Chromium smoke tests; full tactical rules and content coverage remain future milestones.
 
 - The serializable shared combat queue processes **hero Move and Heal actions**, then records action completion (including loss-on-use and elemental infusion).
 - Explicitly scripted monster cards advance through separately queued movement, attack, and nonattack effects, including **self-healing, Shield, Retaliate, conditions and elemental infusion**.
