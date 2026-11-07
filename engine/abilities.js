@@ -21,7 +21,7 @@
    if(!state||!state.units||!state.units[actorId])throw Error('Unknown actor');
    if(!Array.isArray(steps)||steps.length===0)throw Error('Missing ability steps');
    for(const step of steps){
-     if(!['attack','heal','shield','retaliate','push','pull','condition','move','infuse'].includes(step.type))throw Error('Unsupported ability: '+step.type);
+     if(!['attack','areaAttack','heal','shield','retaliate','push','pull','condition','move','infuse'].includes(step.type))throw Error('Unsupported ability: '+step.type);
      if(step.value!==undefined&&(!Number.isFinite(step.value)||step.value<0))throw Error('Invalid ability value');
    }
  }
@@ -32,7 +32,7 @@
      if(u.hp<=0)return false;
      if(type==='shield'||type==='retaliate'||type==='move'||type==='infuse')return id===actor.id;
      if(type==='heal')return u.team===actor.team;
-     if(type==='attack'||type==='push'||type==='pull'||type==='condition')return u.team!==actor.team;
+     if(type==='attack'||type==='areaAttack'||type==='push'||type==='pull'||type==='condition')return u.team!==actor.team;
      return false;
    }).filter(id=>(step.range===undefined||distance(actor,state.units[id])<=step.range)
          &&(step.lineOfSight===false||!state.lineOfSight||state.lineOfSight[actor.id+'>'+id]!==false));
@@ -84,14 +84,26 @@
        }
        actor.q=origin.q;actor.r=origin.r;events.push({type,unit:actorId,at:origin});continue;
      }
-     const ids=choice.targets||[];
+     let ids=choice.targets||[];
+     if(type==='areaAttack'){
+       if(!choice.anchor||!Number.isInteger(choice.anchor.q)||!Number.isInteger(choice.anchor.r))throw Error('Area attack requires a hex anchor');
+       if(!Array.isArray(step.area)||!step.area.length)throw Error('Area attack requires shape offsets');
+       if(step.range!==undefined&&distance(actor,choice.anchor)>step.range)throw Error('Area anchor beyond range');
+       const center={q:choice.anchor.q-(choice.anchor.r-(choice.anchor.r&1))/2,r:choice.anchor.r};
+       const hexes=step.area.map(offset=>{
+         if(!Number.isInteger(offset.q)||!Number.isInteger(offset.r))throw Error('Invalid area offset');
+         const axialQ=center.q+offset.q,r=center.r+offset.r;
+         return key({q:axialQ+(r-(r&1))/2,r});
+       });
+       ids=validTargets(next,actor,{type:'attack',lineOfSight:step.lineOfSight}).filter(id=>hexes.includes(key(next.units[id])));
+     }
      if(!Array.isArray(ids)||new Set(ids).size!==ids.length)throw Error('Target list must be unique');
-     const eligible=validTargets(next,actor,step),limit=step.targets??1;
+     const eligible=validTargets(next,actor,type==='areaAttack'?{type:'attack',lineOfSight:step.lineOfSight}:step),limit=type==='areaAttack'?Infinity:(step.targets??1);
      if(ids.length>limit||ids.some(id=>!eligible.includes(id)))throw Error('Invalid target selection');
      if(step.required!==false&&ids.length===0)throw Error('No target selected');
      for(const id of ids){
        const target=next.units[id];target.id=id;
-       if(type==='attack'){
+       if(type==='attack'||type==='areaAttack'){
          const bonus=opts.modifier?opts.modifier({actor:copy(actor),target:copy(target),step:copy(step),index}):0;
          if(!Number.isFinite(bonus))throw Error('Invalid modifier');
          const attack=Math.max(0,(step.value||0)+bonus);
