@@ -2833,3 +2833,51 @@ test('F2 retaliation interrupt precedes post-hit Shield choice and resumes once'
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 saved linked Push resolves before post-hit optional Shield',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.players[0].active=[];
+  s.modifiers.heroes[0].draw=[0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:12,maxHp:12,conditions:{}}];
+  const action={kind:'attack',value:4,range:1,which:'top',cardIndex:2,
+    asBasic:false,condition:'disarm',followupType:'push',multiRemaining:1,
+    targetIds:[],valid:[{q:1,r:4}]};
+  const events=window.EmberwatchAbilities.compileHeroQueue('p0',action,[
+    {type:'attack',value:4,range:1},
+    {type:'shield',value:1,duration:'round',optional:true}
+  ],{targetId:'e0'});
+  s.combatQueue={version:1,owner:'hero',index:0,paused:true,
+   pauseReason:'damage',events};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Earlier interruption',
+    condition:null,resume:'queue',attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(8);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.players[0].active.filter(x=>x.type==='shield')).toHaveLength(0);
+ await page.reload();
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,4]);
+ expect(st.players[0].active.filter(x=>x.type==='shield')).toHaveLength(0);
+ await page.reload();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(8);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.players[0].active.filter(x=>x.type==='shield')).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
