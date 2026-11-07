@@ -654,3 +654,28 @@ test('hero retaliation interruption resumes selected action after page reload',a
  await expect(page.locator('#endTurn')).toBeVisible();
  expect(errors).toEqual([]);
 });
+
+test('legacy interrupted monster save resumes without replaying earlier attacks',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';
+  s.order=[{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:0,initiative:30}];
+  s.turnIndex=0;s.enemyCursor=2;s.combatQueue=null;
+  s.enemies=[
+   {id:'old-ash-one',name:'Ash Raider',hp:8,maxHp:8,q:2,r:4,conditions:{}},
+   {id:'old-ash-two',name:'Ash Raider',hp:8,maxHp:8,q:2,r:5,conditions:{}}
+  ];
+  s.pendingDamage={heroIndex:0,amount:2,source:'old-ash-two',condition:null,resume:'enemy',monsterType:'Ash Raider',sourceId:'old-ash-two',attack:true};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.turnIndex).toBe(1);
+ expect(st.journal.filter(x=>x.includes('attacks '))).toHaveLength(0);
+ expect(errors).toEqual([]);
+});
