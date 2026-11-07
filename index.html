@@ -1101,11 +1101,6 @@ function moveQueuedMonsterHex(event){
      !icySlideFrom(event.slideOrigin,event.slideEntry,enemy,'walk')
        .some(p=>p.q===hex.q&&p.r===hex.r)));
  if(blocked){
-   log(enemy.name+' checks blocked step '+hex.q+','+hex.r+
-     ' (from '+from.q+','+from.r+', cost '+cost+
-     ', spent '+event.spent+'/'+event.budget+
-     ', occupied '+(occupied?.id||'none')+
-     ', discovered '+discovered(hex.q,hex.r)+').');
    const q=state.combatQueue;
    // Discard only unexecuted movement hexes belonging to this activation.
    let end=q.index;
