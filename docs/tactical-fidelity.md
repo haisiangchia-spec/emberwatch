@@ -84,6 +84,19 @@ Implemented in the playable HTML5 prototype:
 
 ---
 
+## Milestone 1 continuation — v0.10.1 stepwise events
+
+Implemented and tested:
+- Hero **Move** and **Heal** board choices execute via the shared `heroActionResolve` queue event; a separate `heroActionComplete` event applies loss-on-use and elemental infusion once.
+- Explicitly scripted monster cards now enqueue `monsterStart`, one event per Move/Attack/self-effect step, and `monsterFinish`, preserving the ability's order.
+- The queue supports consecutive attacks from one monster with a separate player damage decision after each hit. Reloading during either decision preserves the event cursor, modifier draws, and game state.
+- Monster non-attack steps can self-heal, activate Shield/Retaliate, gain a condition, or infuse an element. These original demo effects can occur before or after a damage interruption.
+- Tested interrupted double attacks, hero movement and loot persistence, and Shield → Attack → Infuse ordering through a reload. The code-bearing run for this last test passed **33 Chromium browser tests**.
+
+**Not yet fully unified:** Some hero attacks, positional choices, area/forced movement effects, monster focus decisions and legacy modifier-card monster actions still execute through older specialized handlers. Full attack effect timing, all terrain interrupts, multi-hex path steps, persistent class mechanics, and four-client deterministic synchronization are separate unfinished work. This is **Milestone 1 in progress**, not tactical-fidelity completion.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
