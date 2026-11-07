@@ -1,8 +1,12 @@
-# Emberwatch v0.10.4 — Saved Monster Focus
+# Emberwatch v0.10.5 — Unified Monster Ability Steps
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- **All newly activated monster cards**, including older modifier-based cards, now run through explicit Start, Focus, Move, Attack and Finish queue events. An already-running atomic monster event is supported only for older saved games.
+- The normalized action values and effects are stored in the queue, preventing completed modifier draws or attacks from being repeated after reload.
+- The engine still requires a comprehensive monster AI and focus rules audit; complete official card content is not included.
 
 - Scripted monster turns now select and save their focus as a standalone queued event before moving and attacking. The choice and route survive reloads during damage decisions.
 - The focus ordering was extracted into a standalone, tested module. It preserves Emberwatch's current selection rule and is **not** yet a complete Frosthaven focus implementation.
