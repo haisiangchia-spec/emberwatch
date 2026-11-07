@@ -1,3 +1,11 @@
+# Emberwatch v0.12.0 — F2 Ability Interpreter Consolidation
+
+Movement work is frozen except for specific conformance failures. This F2 increment requires explicit decisions to skip optional abilities in the serializable interpreter, with choice checkpoints surviving JSON reload. Shared HP recovery logic now calculates and caps healing for both generic abilities and live scripted monster healing. Added Node tests for serialized optional Shield/Heal/Attack choices and a Playwright regression for healing across a saved combat interruption.
+
+This is **not** full F2 closure: the live hero UI still uses specialized action handlers, and complete ordered abilities, effect timing, conditions and persistent class mechanics remain open. See `docs/tactical-fidelity.md`.
+
+---
+
 # Emberwatch v0.11.8 — Serialized Monster Movement Hexes
 
 Monster movement now expands into individually saved `monsterMoveHex` queue events. Each event validates the live terrain and occupancy before entering its hex, resolves traps/hazardous effects once, and preserves its paid movement allowance. When a normal step becomes newly blocked, the monster makes at most one additional route choice toward its **already selected focus**, using only remaining movement points. An interrupted compulsory ice slide stops rather than redirecting.
