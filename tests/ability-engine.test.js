@@ -232,3 +232,29 @@ assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
 assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
  {type:'guard',value:1,optional:true}]),/Guard cannot be optional/);
 console.log('F2 structured hero card queue compilation conformance assertions passed');
+
+
+const attackAction={kind:'attack',value:4,range:1,which:'top',
+ cardIndex:2,asBasic:false,condition:'disarm',followupType:'push'};
+const compiledAttack=abilities.compileHeroQueue('p0',attackAction,
+ [{type:'attack',value:'action',range:1}],{targetId:'e0'});
+assert.deepEqual(compiledAttack.map(e=>e.type),[
+ 'heroAttackHit','heroAttackLinked','heroAttackLinked','heroAttackPostHit']);
+assert.deepEqual(compiledAttack.slice(1,3).map(e=>e.step.type),['condition','push']);
+assert(compiledAttack.every(e=>e.actorId==='p0'&&e.targetId==='e0'));
+assert.equal(compiledAttack[0].action.value,4);
+assert.deepEqual(JSON.parse(JSON.stringify(compiledAttack)),compiledAttack);
+assert.deepEqual(abilities.compileHeroQueue('p0',{...attackAction,asBasic:true,
+ condition:null,followupType:null},
+ [{type:'attack',value:2,range:1}],{targetId:'e0'}).map(e=>e.type),
+ ['heroAttackHit','heroAttackPostHit']);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
+ [{type:'attack',value:4}]),/Attack requires selected target/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
+ [{type:'attack',value:4,optional:true}],{targetId:'e0'}),/Optional attack selection/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
+ [{type:'attack',value:4},{type:'shield',value:1}],{targetId:'e0'}),
+ /standalone attack/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
+ [{type:'attack',value:-1}],{targetId:'e0'}),/Invalid Attack/);
+console.log('F2 hero attack compiler and legacy continuation compatibility assertions passed');
