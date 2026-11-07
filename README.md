@@ -1,3 +1,11 @@
+# Emberwatch v0.12.1 — F2 Ordered Hero Defensive Abilities
+
+Live hero Guard actions now execute as `heroGuard` followed by structured `heroAbilityEffect` events and `heroActionComplete` in the serializable combat queue. The latter effects are resolved by the shared `EmberwatchAbilities.apply` interpreter (currently Shield, Retaliate and Infuse), rather than legacy direct hero-defense mutation. A saved queue can resume after an already-completed Guard event without replaying it. Browser regressions verify a normal Brace action and resume-after-reload case.
+
+This is a limited F2 integration slice, **not** a complete conversion of all hero actions. Remaining work includes attacks, heals, movement/target decisions and optional ability UI state.
+
+---
+
 # Emberwatch v0.12.0 — F2 Ability Interpreter Consolidation
 
 Movement work is frozen except for specific conformance failures. This F2 increment requires explicit decisions to skip optional abilities in the serializable interpreter, with choice checkpoints surviving JSON reload. Shared HP recovery logic now calculates and caps healing for both generic abilities and live scripted monster healing. Added Node tests for serialized optional Shield/Heal/Attack choices and a Playwright regression for healing across a saved combat interruption.
