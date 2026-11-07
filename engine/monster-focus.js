@@ -28,5 +28,19 @@
    clean.sort(compare);
    return {chosen:clean[0]||null,ranking:clean};
  }
- return Object.freeze({choose,compare});
+ // After focus has been fixed, a ranged monster already adjacent to its
+ // primary focus may step to an unoccupied, safe attack hex. This decision
+ // must NOT change the primary focus. The caller supplies legal reachable
+ // positions, precomputed safe path costs, and line-of-sight results.
+ function rangedRetreat({origin,focus,range,move,candidates,muddled=false,strengthened=false}){
+   if(!origin||!focus||!Array.isArray(candidates))throw Error('Invalid ranged retreat data');
+   if(!Number.isFinite(range)||!Number.isFinite(move))throw Error('Invalid retreat limits');
+   if(range<=1||move<=0||origin.distance!==1||(muddled&&!strengthened))return null;
+   const legal=candidates.filter(c=>Number.isFinite(c.cost)&&c.cost>0&&c.cost<=move&&
+      c.negative===0&&c.distance>=2&&c.distance<=range&&c.lineOfSight&&
+      !c.occupied&&Number.isInteger(c.q)&&Number.isInteger(c.r));
+   legal.sort((a,b)=>a.cost-b.cost||a.r-b.r||a.q-b.q);
+   return legal.length?{q:legal[0].q,r:legal[0].r,cost:legal[0].cost}:null;
+ }
+ return Object.freeze({choose,compare,rangedRetreat});
 });
