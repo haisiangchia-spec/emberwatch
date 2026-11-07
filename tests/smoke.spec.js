@@ -971,3 +971,42 @@ test('area anchor and remaining area targets survive repeated reloads',async ({p
  expect(st.pendingTargeting).toBeNull();
  expect(errors).toEqual([]);
 });
+
+test('multi-target attack continues after first defender retaliates and player reloads',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:2,initiative:43}];s.turnIndex=0;
+  s.players[2].picked=[5,0];s.modifiers.heroes[2].draw=[0,0,0];s.modifiers.heroes[2].discard=[];
+  s.enemies=[
+   {id:'retaliator',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{},
+    active:[{type:'retaliate',value:1,range:3,duration:'round'}]},
+   {id:'other',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
+  ];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toContainText('retaliation');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingTargeting.action.multiRemaining).toBe(2);
+ const firstHp=st.enemies[0].hp;
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingTargeting.action.targetIds).toEqual(['retaliator']);
+ expect(st.pendingTargeting.action.multiRemaining).toBe(1);
+ expect(st.pendingDamage).toBeNull();
+ await page.reload();
+ await expect(page.locator('#board polygon.selected')).toHaveCount(1);
+ await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(firstHp);
+ expect(st.enemies[1].hp).toBeLessThan(99);
+ expect(st.pendingTargeting).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(2);
+ expect(errors).toEqual([]);
+});
