@@ -60,6 +60,18 @@ The area implementation is still deliberately narrow: no shape rotation, multi-h
 
 ---
 
+## v0.9.3 checkpoint: shared hit calculation and modifier selection
+
+- `engine/abilities.js` now exposes `hitDamage`, `retaliation`, and `chooseRoll` as shared rules helpers.
+- Both the live hero attack handler and the monster incoming-damage path use the same Poison, Guard, and persistent Shield hit arithmetic. The same retaliation helper determines whether the defender survives and remains in range.
+- Both hero and monster attack modifiers now use the shared Strengthen/Muddle draw-selection rule. When both statuses apply, they cancel for draw selection.
+- A null attack modifier now overrides the Poison damage bonus: zero damage remains zero, though any applicable attack conditions are still handled separately.
+- Unit tests verify arithmetic and decision cases; the GitHub Actions run **42372533123** passed **27 Chromium browser tests**, including modifier selection.
+
+**Boundary:** This is shared calculation and scripted-value integration, not yet a fully unified execution queue for all monster turns. Monster focus, movement sequencing, interrupt persistence and complex multi-target actions still use legacy code. Full Frosthaven attack-deck reshuffling, rolling modifiers, card perks and advantage/disadvantage edge cases are not yet implemented.
+
+---
+
 ## Fidelity boundaries
 
 The standalone interpreter currently supports **ordered, immediate effects**, but the live game only uses a subset of those effects; it is not a complete Frosthaven action pipeline.
