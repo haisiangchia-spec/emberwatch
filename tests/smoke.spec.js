@@ -2630,3 +2630,72 @@ test('F2 compiled linked attack pauses on Push and reload does not redraw',async
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 mixed Guard then mandatory Heal restores target selection after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:1,initiative:34}];s.turnIndex=0;
+  s.players[1].picked=[0,5];s.players[1].guard=0;
+  s.players[0].hp=7;s.players[0].conditions={poison:true};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toContainText('Required target');
+ await expect(page.locator('#skipAbility')).toHaveCount(0);
+ await expect(page.locator('#executeAbility')).toBeDisabled();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[1].guard).toBe(2);
+ expect(st.players[0].hp).toBe(7);
+ expect(st.combatQueue.pauseReason).toBe('abilityTarget');
+ expect(st.combatQueue.events.map(e=>e.type)).toEqual([
+   'heroGuard','heroAbilityEffect','heroActionComplete']);
+ expect(st.combatQueue.events[1].needsTarget).toBe(true);
+ await page.locator('[data-optional-target="p0"]').click();
+ await page.reload();
+ await expect(page.locator('#executeAbility')).toBeEnabled();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[1].guard).toBe(2);
+ expect(st.players[0].hp).toBe(8);
+ expect(st.players[0].conditions.poison).toBeUndefined();
+ expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('restores 1 HP'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingAbilityChoice??null).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 mandatory target is invalidated after checkpoint reload until another eligible target is selected',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:1,initiative:34}];s.turnIndex=0;
+  s.players[1].picked=[0,5];s.players[1].guard=0;
+  s.players[0].hp=7;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('[data-optional-target="p0"]').click();
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.players[0].q=7;s.players[0].r=5;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await expect(page.locator('#executeAbility')).toBeDisabled();
+ await expect(page.locator('#skipAbility')).toHaveCount(0);
+ await page.locator('[data-optional-target="p1"]').click();
+ await page.locator('#executeAbility').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(7);
+ expect(st.players[1].guard).toBe(2);
+ expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
