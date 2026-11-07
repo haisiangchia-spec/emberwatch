@@ -1052,3 +1052,41 @@ test('queued monster focus and movement are committed before attack interruption
  expect(finished.journal.filter(x=>x.includes(' focuses '))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('legacy monster modifier card is normalized into stable scripted events before interruption',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'old-format',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{name:'Standard Attack',initiative:20,move:-2,attack:0,range:0,condition:'poison'}};
+  s.modifiers.monsters.draw=[0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue.events.map(e=>e.type)).toEqual([
+  'monsterStart','monsterFocus','monsterMove','monsterAttack','monsterFinish'
+ ]);
+ expect(st.combatQueue.index).toBe(4);
+ const attack=st.combatQueue.events[3].step;
+ expect(attack).toMatchObject({type:'attack',condition:'poison'});
+ const damage=st.pendingDamage.amount,draws=st.modifiers.monsters.discard.length;
+ await page.reload();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue.events[3].step).toEqual(attack);
+ expect(st.pendingDamage.amount).toBe(damage);
+ expect(st.modifiers.monsters.discard.length).toBe(draws);
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue).toBeNull();
+ expect(st.monsterTurnPlans['old-format']).toBeUndefined();
+ expect(st.journal.filter(line=>line.includes(' attacks '))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
