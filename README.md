@@ -1,3 +1,11 @@
+# Emberwatch v0.13.1 — Data-Driven Post-Attack Abilities
+
+The ability compiler now stores validated post-attack instructions as a serialized suffix. After linked effects and retaliation, the live combat engine starts a queue containing only the remaining instructions and final action completion. *Hammerfall* demonstrates Attack 5 → optional Shield 1. Tests cover execution and skipping across reload during retaliation.
+
+F2 is still incomplete. Mixed move/attack and advanced class effects remain outside the safe shared compiler.
+
+---
+
 # Emberwatch v0.13.0 — Mixed Shield → Attack Card Instructions
 
 The structured hero queue compiler now supports ordered mandatory self effects followed by a terminal Attack. *Shield Rush* demonstrates Shield 1 then Attack 3, using the existing combat modifier, linked condition, forced movement and retaliation engine. Compiled events remain serializable through a damage interruption. Post-hit instructions remain explicitly unsupported until continuation logic can safely resume them.
