@@ -826,6 +826,35 @@ function runCombatQueue(){
      }
      continue
    }
+   if(event.type==='heroGuard'){
+     const actor=state.players.find(p=>p.id===event.actorId&&p.hp>0&&!p.exhausted);
+     if(actor){
+       actor.guard+=event.value;
+       log(actor.name+' gains '+event.value+' Guard.');
+     }
+     continue
+   }
+   if(event.type==='heroAbilityEffect'){
+     const actor=state.players.find(p=>p.id===event.actorId&&p.hp>0&&!p.exhausted);
+     if(actor){
+       const effect=event.effect;
+       // Shared F2 interpreter owns effect application and duration state.
+       // For now this adapter covers self Shield/Retaliate and Infuse;
+       // unsupported effects must fail rather than silently disappear.
+       if(!['shield','retaliate','infuse'].includes(effect.type))
+         throw Error('Unsupported queued hero effect: '+effect.type);
+       const snapshot={units:{hero:{id:'hero',team:'heroes',q:actor.q,r:actor.r,
+         hp:actor.hp,maxHp:actor.maxHp,active:actor.active||[]}},
+         elements:clone(state.elements||{})};
+       const outcome=window.EmberwatchAbilities.apply(snapshot,'hero',[effect],[{}]);
+       actor.active=outcome.state.units.hero.active||[];
+       if(effect.type==='infuse'&&effect.element)infuse(effect.element);
+       for(const resolved of outcome.events)if(resolved.type!=='infuse')
+         log(actor.name+' gains '+resolved.type+' '+resolved.value+
+           ' until '+resolved.duration+'.');
+     }
+     continue
+   }
    if(event.type==='heroActionResolve'){
      const actor=state.players.find(p=>p.id===event.actorId);
      if(actor&&actor.hp>0&&!actor.exhausted){
@@ -1216,7 +1245,16 @@ function activateTacticalEffects(actor,effects){
  actor.active=result.state.units.hero.active||[];
  for(const ev of result.events)log(actor.name+' gains '+ev.type+' '+ev.value+' until '+ev.duration+'.');
 }
-function offerAction(which,asBasic=false){if(state.phase!=='act'||!myTurn()||state.combatQueue?.paused||ui.actionMode||ui.actions.includes(which))return;let actor=currentPlayer(),idx=actor.picked[which==='top'?0:1];if(idx===undefined)return;let data=asBasic?(which==='top'?['attack',2,1]:['move',2]):CARD_LIBRARY[state.order[state.turnIndex].id][idx][which==='top'?'t':'b'];const [rawKind,value,range]=data;const kind=['jump','fly'].includes(rawKind)?'move':rawKind;const movementMode=['jump','fly'].includes(rawKind)?rawKind:'walk';const card=asBasic?{}:CARD_LIBRARY[state.order[state.turnIndex].id][idx];const empower=card.consume&&consumeElement(card.consume)?1:0;const gear=state.campaign.heroes[state.players.indexOf(actor)].gear;const enhanced=!asBasic&&state.campaign.heroes[state.players.indexOf(actor)].upgrades.includes(idx)?1:0;const power=value+empower+enhanced+(kind==='attack'&&gear.includes('sword')?1:0)+(kind==='move'&&gear.includes('boots')?1:0);if(kind==='guard'){actor.guard+=power;log(actor.name+' gains '+power+' Guard.');if(!asBasic)activateTacticalEffects(actor,card.tactical?.[which==='top'?'t':'b']);if(card.infuse)infuse(card.infuse);if(isLostAction(state.order[state.turnIndex].id,idx,which,asBasic))actor.lossOnUse.push(idx);ui.actions.push(which);commit();return}if(kind==='attack'&&hasCondition(actor,'disarm')){log(actor.name+' is disarmed and cannot attack.');ui.actions.push(which);commit();return}if(kind==='move'&&hasCondition(actor,'immobilize')){log(actor.name+' is immobilized and cannot move.');ui.actions.push(which);commit();return}let valid=kind==='move'?reachable(actor,power,movementMode):targets(actor,range,kind);if(kind==='heal'&&valid.length===0){ui.actions.push(which);commit();return}const steps=asBasic?[]:card.tactical?.[which==='top'?'t':'b']||[];const followup=steps.find(x=>x.type==='push'||x.type==='pull');const multi=steps.find(x=>x.type==='attackTargets'),area=steps.find(x=>x.type==='areaAttack');if(area){valid=[];for(let r=0;r<6;r++)for(let q=0;q<8;q++)if(inside(q,r)&&discovered(q,r)&&!wall(q,r)&&!rock(q,r)&&axialDist(actor,{q,r})<=range&&lineOfSight(actor,{q,r}))valid.push({q,r})}ui.actionMode={kind:area?'area':kind,value:power,range,movementMode,which,cardIndex:idx,asBasic,condition:card.condition,infuse:card.infuse,followupType:followup?.type||null,areaShape:area?.area||null,multiRemaining:multi?.value||1,targetIds:[],valid:valid.map(x=>({q:x.q,r:x.r}))};if(area||multi)state.pendingTargeting={actorId:actor.id,action:clone(ui.actionMode)};commit()}
+function offerAction(which,asBasic=false){if(state.phase!=='act'||!myTurn()||state.combatQueue?.paused||ui.actionMode||ui.actions.includes(which))return;let actor=currentPlayer(),idx=actor.picked[which==='top'?0:1];if(idx===undefined)return;let data=asBasic?(which==='top'?['attack',2,1]:['move',2]):CARD_LIBRARY[state.order[state.turnIndex].id][idx][which==='top'?'t':'b'];const [rawKind,value,range]=data;const kind=['jump','fly'].includes(rawKind)?'move':rawKind;const movementMode=['jump','fly'].includes(rawKind)?rawKind:'walk';const card=asBasic?{}:CARD_LIBRARY[state.order[state.turnIndex].id][idx];const empower=card.consume&&consumeElement(card.consume)?1:0;const gear=state.campaign.heroes[state.players.indexOf(actor)].gear;const enhanced=!asBasic&&state.campaign.heroes[state.players.indexOf(actor)].upgrades.includes(idx)?1:0;const power=value+empower+enhanced+(kind==='attack'&&gear.includes('sword')?1:0)+(kind==='move'&&gear.includes('boots')?1:0);if(kind==='guard'){
+ const action={kind:'guard',value:power,which,cardIndex:idx,asBasic,infuse:card.infuse};
+ const effects=asBasic?[]:(card.tactical?.[which==='top'?'t':'b']||[]);
+ state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
+   {type:'heroGuard',actorId:actor.id,value:power},
+   ...effects.map(effect=>({type:'heroAbilityEffect',actorId:actor.id,effect:clone(effect)})),
+   {type:'heroActionComplete',actorId:actor.id,action}
+ ]);
+ runCombatQueue();return
+}if(kind==='attack'&&hasCondition(actor,'disarm')){log(actor.name+' is disarmed and cannot attack.');ui.actions.push(which);commit();return}if(kind==='move'&&hasCondition(actor,'immobilize')){log(actor.name+' is immobilized and cannot move.');ui.actions.push(which);commit();return}let valid=kind==='move'?reachable(actor,power,movementMode):targets(actor,range,kind);if(kind==='heal'&&valid.length===0){ui.actions.push(which);commit();return}const steps=asBasic?[]:card.tactical?.[which==='top'?'t':'b']||[];const followup=steps.find(x=>x.type==='push'||x.type==='pull');const multi=steps.find(x=>x.type==='attackTargets'),area=steps.find(x=>x.type==='areaAttack');if(area){valid=[];for(let r=0;r<6;r++)for(let q=0;q<8;q++)if(inside(q,r)&&discovered(q,r)&&!wall(q,r)&&!rock(q,r)&&axialDist(actor,{q,r})<=range&&lineOfSight(actor,{q,r}))valid.push({q,r})}ui.actionMode={kind:area?'area':kind,value:power,range,movementMode,which,cardIndex:idx,asBasic,condition:card.condition,infuse:card.infuse,followupType:followup?.type||null,areaShape:area?.area||null,multiRemaining:multi?.value||1,targetIds:[],valid:valid.map(x=>({q:x.q,r:x.r}))};if(area||multi)state.pendingTargeting={actorId:actor.id,action:clone(ui.actionMode)};commit()}
 function finishAction(){
  const a=ui.actionMode,p=currentPlayer();
  if(!a||!p||state.combatQueue?.paused)return;
