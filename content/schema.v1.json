@@ -133,6 +133,39 @@
         },
         "duration": {
           "type": "string"
+        },
+        "after": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ability"
+          },
+          "description": "Linked post-attack effects resolved before retaliation"
+        },
+        "area": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "q",
+              "r"
+            ],
+            "properties": {
+              "q": {
+                "type": "integer"
+              },
+              "r": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Axial hex offsets from chosen anchor"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "lineOfSight": {
+          "type": "boolean"
         }
       }
     }
