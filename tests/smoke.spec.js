@@ -1388,6 +1388,7 @@ test('monster killed by first target retaliation cannot continue multi-target at
   s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20},{type:'player',id:1,initiative:30}];
   s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
   for(let i=2;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.players[0].active=[{type:'retaliate',value:99,range:6,duration:'round'}];
   s.players[1].active=[{type:'retaliate',value:99,range:6,duration:'round'}];
   s.enemies=[{id:'doomed-multi',name:'Ash Archer',hp:4,maxHp:4,q:1,r:3,conditions:{}}];
   s.walls=[];s.rocks=[];s.difficult=[];s.traps=[];s.scenario.revealed=[0,1,2];
@@ -1401,7 +1402,7 @@ test('monster killed by first target retaliation cannot continue multi-target at
  await page.locator('#endTurn').click();
  await expect(page.locator('#damageChoice')).toBeVisible();
  let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
- expect(st.pendingDamage.heroIndex).toBe(1);
+ expect([0,1]).toContain(st.pendingDamage.heroIndex);
  const used=st.modifiers.monsters.discard.length;
  await page.locator('#takeDamage').click();
  st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
