@@ -56,3 +56,39 @@ assert.equal(rangedRetreat({...baseRetreat,candidates:baseRetreat.candidates.map
 assert.equal(rangedRetreat({...baseRetreat,candidates:baseRetreat.candidates.map(x=>({...x,lineOfSight:false}))}),null);
 assert.throws(()=>rangedRetreat({...baseRetreat,candidates:null}),/Invalid/);
 console.log('Ranged monster retreat assertions passed');
+
+const {multiTargetPosition}=require('../engine/monster-focus.js');
+const multiFixtures=[
+ {q:0,r:0,cost:0,negative:0,occupied:false,targets:[
+   {id:'p0',seat:0,disadvantaged:true}]},
+ {q:1,r:0,cost:1,negative:0,occupied:false,targets:[
+   {id:'p0',seat:0,disadvantaged:false},
+   {id:'p1',seat:1,disadvantaged:false}]},
+ {q:2,r:0,cost:2,negative:0,occupied:false,targets:[
+   {id:'p0',seat:0,disadvantaged:false},
+   {id:'p1',seat:1,disadvantaged:false},
+   {id:'p2',seat:2,disadvantaged:true}]},
+ {q:3,r:0,cost:1,negative:1,occupied:false,targets:[
+   {id:'p0',seat:0,disadvantaged:false},
+   {id:'p1',seat:1,disadvantaged:false},
+   {id:'p2',seat:2,disadvantaged:false}]},
+ {q:4,r:0,cost:1,negative:0,occupied:false,targets:[
+   {id:'p1',seat:1,disadvantaged:false},
+   {id:'p2',seat:2,disadvantaged:false}]}
+];
+let chosen=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:multiFixtures});
+assert.deepEqual(chosen,{q:1,r:0,cost:1,negative:0,targets:['p0','p1'],count:2,disadvantage:0},
+ 'prioritize safe max targets and zero disadvantage with minimum movement');
+chosen=multiTargetPosition({focusId:'p0',maxTargets:3,move:2,candidates:multiFixtures});
+assert.deepEqual(chosen.targets,['p0','p1','p2'],
+ 'max additional targets before disadvantage');
+assert.equal(chosen.q,2);
+chosen=multiTargetPosition({focusId:'p0',maxTargets:3,move:1,candidates:multiFixtures});
+assert.equal(chosen.q,1,'only reachable positions this turn');
+chosen=multiTargetPosition({focusId:'p0',maxTargets:2,move:0,candidates:multiFixtures});
+assert.equal(chosen.q,0,'stationary attack when out of movement');
+assert.equal(multiTargetPosition({focusId:'unreachable',maxTargets:2,move:2,candidates:multiFixtures}),null);
+assert.equal(multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:
+ multiFixtures.map(x=>({...x,occupied:true}))}),null);
+assert.throws(()=>multiTargetPosition({focusId:'p0',maxTargets:1,move:2,candidates:[]}),/Invalid/);
+console.log('Multi-target movement ranking assertions passed');
