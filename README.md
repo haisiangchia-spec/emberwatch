@@ -1,8 +1,12 @@
-# Emberwatch v0.11.1 — Stepwise Hero Terrain Movement
+# Emberwatch v0.11.2 — Chained Icy Sliding
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- The new icy-terrain resolver performs zero-cost same-direction slides, chaining through multiple icy hexes until the path is blocked or ice ends. Jump/Fly ignore ice.
+- Hero movement, monster movement and hero Push/Pull now apply ice, including terrain damage interruptions during slides. Hero slide steps remain saved across reloads.
+- Ice, traps and hazardous terrain have distinct map markers. Monster focus/path planning still needs to anticipate icy slides; this is not yet full Frosthaven tactical fidelity.
 
 - Hero Move/Jump/Fly actions now enqueue **each traversed hex**, saving the chosen route and resolving dangerous terrain per step.
 - Trap and hazardous-terrain damage pauses the route for card-loss damage prevention; the player may reload while deciding, then resume with no duplicated tile triggers or movement.
