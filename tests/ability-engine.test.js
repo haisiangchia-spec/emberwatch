@@ -189,7 +189,7 @@ assert.deepEqual(
 assert.deepEqual(
  abilities.optionalTargetIds(optionalCandidatesScene,'hero',
    {type:'condition',condition:'muddle',range:1}),
- ['e1']);
+ ['e1','e2']);
 const obscured=state();obscured.lineOfSight={'hero>e1':false,'hero>e2':true};
 assert.deepEqual(abilities.optionalTargetIds(obscured,'hero',
  {type:'condition',condition:'muddle',range:2}),['e2']);
