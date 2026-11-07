@@ -44,7 +44,32 @@ assert.throws(()=>apply(movement,'hero',[{type:'push',value:1,range:2}],[{target
 result=apply(s,'hero',[{type:'infuse',element:'fire'},{type:'condition',condition:'wound',range:2}],[{}, {targets:['e1']}]);
 assert.equal(result.state.elements.fire,2);
 assert.equal(result.state.units.e1.conditions.wound,true);
-assert.throws(()=>apply(s,'hero',[{type:'attack',value:1,after:[{type:'push',value:1}]}],[{targets:['e1']}]),/pending-hit/);
+// Linked attack timing: damage -> push/pull/condition -> retaliation.
+let linked=state();
+linked.units.e1.active=[{type:'retaliate',value:3,range:1,duration:'round'}];
+let sequence=apply(linked,'hero',[
+ {type:'attack',value:1,range:1,after:[{type:'push',value:1},{type:'condition',condition:'wound'}]}
+],[{targets:['e1'],after:{e1:[{path:[{q:3,r:1}]},{}]}}]);
+assert.deepEqual(sequence.events.map(e=>e.type),['attack','push','condition']);
+assert.equal(sequence.state.units.hero.hp,10,'retaliate out of range after push does not occur');
+assert.equal(sequence.state.units.e1.q,3);
+assert.equal(sequence.state.units.e1.conditions.wound,true);
+assert.equal(sequence.state.units.e1.hp,7);
+sequence=apply(linked,'hero',[
+ {type:'attack',value:1,range:1,after:[{type:'condition',condition:'poison'}]}
+],[{targets:['e1']}]);
+assert.deepEqual(sequence.events.map(e=>e.type),['attack','condition','retaliate']);
+assert.equal(sequence.state.units.hero.hp,7);
+let killed=state();killed.units.e1.hp=2;killed.units.e1.active=[{type:'retaliate',value:3,range:1,duration:'round'}];
+sequence=apply(killed,'hero',[{type:'attack',value:3,range:1,after:[{type:'push',value:1}]}],[{targets:['e1']}]);
+assert.deepEqual(sequence.events.map(e=>e.type),['attack'],'dead target has no linked effects or retaliation');
+assert.throws(()=>apply(linked,'hero',[{type:'attack',value:1,range:1,after:[{type:'push',value:1}]}],
+ [{targets:['e1'],after:{e1:[{path:[{q:1,r:1}]}]}}]),/occupied|increase|adjacent/);
+let stacked=state();stacked.units.e1.active=[{type:'retaliate',value:2,range:1,duration:'round'}];stacked.units.e2.active=[{type:'retaliate',value:2,range:1,duration:'round'}];
+sequence=apply(stacked,'hero',[{type:'attack',value:1,range:2,targets:2,after:[{type:'condition',condition:'wound'}]}],
+ [{targets:['e1','e2']}]);
+assert.deepEqual(sequence.events.map(e=>e.type),['attack','condition','retaliate','attack','condition','retaliate']);
+assert.equal(sequence.state.units.hero.hp,6);
 // An area pattern is expressed as axial offsets from an odd-row hex anchor.
 const splash=apply(state(),'hero',[{type:'areaAttack',value:2,range:2,area:[{q:0,r:0},{q:-1,r:1}]}],[{anchor:{q:2,r:1}}]);
 assert.equal(splash.state.units.e1.hp,6);
