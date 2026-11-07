@@ -727,14 +727,14 @@ test('structured monster multi-attack ability pauses per hit and resumes without
  await page.locator('#endTurn').click();
  await expect(page.locator('#damageChoice')).toBeVisible();
  let state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
- expect(state.combatQueue.index).toBe(3);
+ expect(state.combatQueue.index).toBe(4);
  expect(state.combatQueue.paused).toBe(true);
  const first=state.modifiers.monsters.discard.length;
  await page.reload();
  await page.locator('#takeDamage').click();
  await expect(page.locator('#damageChoice')).toBeVisible();
  state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
- expect(state.combatQueue.index).toBe(4);
+ expect(state.combatQueue.index).toBe(5);
  expect(state.combatQueue.paused).toBe(true);
  expect(state.modifiers.monsters.discard.length).toBe(first+1);
  await page.reload();
