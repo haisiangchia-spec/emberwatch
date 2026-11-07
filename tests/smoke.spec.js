@@ -2399,3 +2399,88 @@ test('F2 optional allied Heal skips without target or duplicate effects after re
  expect(st.pendingAbilityChoice??null).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 ordered optional Condition then Heal survives two decisions across reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:72}];s.turnIndex=0;
+  s.players[0].picked=[0,4];s.players[0].guard=3;s.players[0].active=[];
+  s.players[2].hp=5;
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:9,maxHp:9,conditions:{}}];
+  s.journal.unshift('R1 · Vanguard gains 3 Guard.');
+  s.combatQueue={version:1,owner:'hero',index:1,paused:true,pauseReason:'damage',events:[
+    {type:'heroGuard',actorId:'p0',value:3},
+    {type:'heroAbilityEffect',actorId:'p0',effect:{
+      type:'condition',condition:'muddle',range:2,optional:true}},
+    {type:'heroAbilityEffect',actorId:'p0',effect:{
+      type:'heal',value:2,range:2,optional:true}},
+    {type:'heroActionComplete',actorId:'p0',action:{
+      kind:'guard',which:'bottom',value:3,cardIndex:4,asBasic:false}}
+  ]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Earlier interruption',
+    condition:null,resume:'queue',attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#optionalAbilityChoice')).toContainText('muddle');
+ await expect(page.locator('#executeAbility')).toBeDisabled();
+ await page.locator('[data-optional-target="e0"]').click();
+ await page.reload();
+ await expect(page.locator('#executeAbility')).toBeEnabled();
+ await page.locator('#executeAbility').click();
+ await expect(page.locator('#optionalAbilityChoice')).toContainText('heal');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].conditions.muddle).toBe(true);
+ expect(st.players[2].hp).toBe(5);
+ expect(st.players[0].guard).toBe(3);
+ await page.reload();
+ await page.locator('[data-optional-target="p2"]').click();
+ await page.reload();
+ await page.locator('#skipAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].conditions.muddle).toBe(true);
+ expect(st.players[2].hp).toBe(5);
+ expect(st.players[0].guard).toBe(3);
+ expect(st.journal.filter(x=>x.includes('gains 3 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains muddle'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('skips optional heal'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingAbilityChoice??null).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 optional condition revalidates enemy target after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:72}];s.turnIndex=0;
+  s.players[0].picked=[0,4];s.players[0].guard=3;
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:9,maxHp:9,conditions:{}}];
+  s.combatQueue={version:1,owner:'hero',index:2,paused:true,
+    pauseReason:'optionalAbility',events:[
+     {type:'heroGuard',actorId:'p0',value:3},
+     {type:'heroAbilityEffect',actorId:'p0',effect:{
+       type:'condition',condition:'muddle',range:2,optional:true}},
+     {type:'heroActionComplete',actorId:'p0',action:{
+       kind:'guard',which:'bottom',value:3,cardIndex:4,asBasic:false}}
+    ]};
+  s.pendingAbilityChoice={actorId:'p0',queueIndex:1,targetId:'e0',
+    effect:{type:'condition',condition:'muddle',range:2,optional:true}};
+  s.enemies[0].q=7;s.enemies[0].r=5;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ await expect(page.locator('#executeAbility')).toBeDisabled();
+ await page.locator('#skipAbility').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].conditions.muddle).toBeUndefined();
+ expect(st.combatQueue).toBeNull();
+ expect(st.players[0].guard).toBe(3);
+ expect(errors).toEqual([]);
+});
