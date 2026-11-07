@@ -442,6 +442,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.13.5 interleaved defensive effects between repeated attacks
+
+- The structured compiler accepts supported **Shield, Retaliate and Infuse** self-effect instructions between two or three attacks. Interleaved effects are separately queued before the subsequent target-selection checkpoint, and the remaining attack/effect instructions remain in serialized `postAttackSteps`.
+- The new pure `compileAttackContinuation` helper compiles only the unexecuted prefix of defensive effects, followed by a `heroAttackTargetChoice` with the remaining tail. The existing hit/linked-effect/retaliation pipeline remains authoritative and no previously resolved attack is rerun.
+- Browser conformance tests exercise optional Shield execute and skip across reload, targeting a new enemy, and retaliation interruption between repeated attacks. Unsafe interleaved Heal/Condition remains explicitly rejected pending support for arbitrary target dependency.
+- **Open F2:** interleaved targeted Heal/Condition, repeat movement, optional attacks, mixed multi-target sequencing, and advanced class/monster rules. Full official-rules conformance is still far from complete.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
