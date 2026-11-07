@@ -1,3 +1,11 @@
+# Emberwatch v0.11.8 — Serialized Monster Movement Hexes
+
+Monster movement now expands into individually saved `monsterMoveHex` queue events. Each event validates the live terrain and occupancy before entering its hex, resolves traps/hazardous effects once, and preserves its paid movement allowance. When a normal step becomes newly blocked, the monster makes at most one additional route choice toward its **already selected focus**, using only remaining movement points. An interrupted compulsory ice slide stops rather than redirecting.
+
+Regression fixtures cover reload partway through a monster movement queue and newly blocked mid-route hexes. This does not yet implement arbitrary network concurrency, mid-slide decision prompts, or fully verified Frosthaven movement rules.
+
+---
+
 # Emberwatch v0.11.7 — Hero movement recovery after interrupts
 
 Hero movement events now retain the intended destination and record the actual movement cost of completed hex steps. When a saved path becomes obstructed after a terrain-damage decision and reload, a surviving hero can try a **single** new route to the same destination using only the unspent movement points. Terrain entries that happened earlier in the action are not replayed. A compulsory icy slide that becomes invalid still stops instead of changing direction.
