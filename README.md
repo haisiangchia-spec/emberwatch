@@ -1,3 +1,20 @@
+# Emberwatch v0.10.1 — Stepwise Tactical Execution
+
+Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
+
+## Recent tactical-engine progress
+
+- The serializable shared combat queue processes **hero Move and Heal actions**, then records action completion (including loss-on-use and elemental infusion).
+- Explicitly scripted monster cards advance through separately queued movement, attack, and nonattack effects, including **self-healing, Shield, Retaliate, conditions and elemental infusion**.
+- Monster cards can contain multiple attacks; each damage-prevention prompt pauses the queue independently. Reconnecting or reloading preserves which modifier draws and attacks were consumed.
+- Legacy monster modifier cards still use the older compatibility path; monster focus/pathfinding and a number of hero attack decisions are not yet fully represented as generic queued effects.
+- The current Cinder Vault demonstration campaign remains in place; no new scenarios have been added.
+- GitHub Actions executes Node conformance assertions and Chromium browser regression tests after code changes. The 33-test browser suite passed on the scripted-effect update; refer to Actions for the latest run.
+
+For current scope and known limitations, see [tactical fidelity plan](docs/tactical-fidelity.md) and [ability interpreter reference](docs/ability-interpreter.md).
+
+---
+
 # Emberwatch v0.7 — Campaign Progression
 
 Emberwatch is an original four-character cooperative HTML5 tactical prototype, inspired by the general style of tactical dungeon-crawling board games. The current version adds a persistent campaign layer on top of the Cinder Vault scenario.
