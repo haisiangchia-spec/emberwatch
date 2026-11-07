@@ -1,3 +1,11 @@
+# Emberwatch v0.11.5 — Atomic Icy Movement Stops
+
+The monster route planner now treats entering ice and sliding to the landing hex as one indivisible movement edge. It cannot select an intermediate ice hex as a planned stopping point, and it still respects remaining movement allowance, occupancy and difficult terrain. The new pure `engine/movement-stop.js` helper is integrated into the live game. `tests/movement-stop.test.js` adds endpoint regression cases and runs under `npm run test:unit`.
+
+This increment does not implement full reactive replanning, comprehensive Frosthaven rule conformance, licensed card data or authoritative multiplayer synchronization. CI/browser results for this new commit have not yet been independently verified.
+
+---
+
 # Emberwatch v0.11.4 — Dynamic Movement Obstructions
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
