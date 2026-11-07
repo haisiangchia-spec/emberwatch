@@ -22,3 +22,13 @@ assert.deepEqual(choose(JSON.parse(JSON.stringify(tied))).ranking,choose(tied).r
 assert.throws(()=>choose(null),/array/);
 assert.throws(()=>choose([{targetId:'p0',cost:-2,distance:0,initiative:1,seat:0,row:1,col:1}]),/Invalid/);
 console.log('Monster focus decision assertions passed');
+const negativeChoices=[
+ {targetId:'near-trap',negative:1,cost:1,distance:1,initiative:1,seat:0,row:1,col:1},
+ {targetId:'far-safe',negative:0,cost:8,distance:5,initiative:80,seat:1,row:3,col:4},
+ {targetId:'far-danger',negative:2,cost:1,distance:1,initiative:1,seat:2,row:2,col:2}
+];
+assert.equal(choose(negativeChoices).chosen.targetId,'far-safe',
+ 'zero negative terrain precedes shortest movement and target proximity');
+assert.equal(choose(negativeChoices).ranking[2].targetId,'far-danger');
+assert.throws(()=>choose([{...negativeChoices[0],negative:-1}]),/Invalid/);
+console.log('Monster negative-hex priority assertions passed');
