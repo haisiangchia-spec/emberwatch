@@ -16,6 +16,7 @@
  }
  function pick(items,rng=Math.random){
    if(!items.length)return null;
+   if(items.length===1)return items[0];
    const roll=rng();
    if(typeof roll!=='number'||!Number.isFinite(roll)||roll<0||roll>=1)
      throw Error('Invalid random roll');
