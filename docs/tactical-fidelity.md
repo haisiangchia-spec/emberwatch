@@ -255,6 +255,22 @@ Implemented and browser-tested:
 
 ---
 
+## Chained icy terrain movement — v0.11.2
+
+Rule reference: [Frosthaven Official FAQ §5.1](https://cephalofairgames.github.io/frosthaven-faq/) and rulebook icy terrain (p. 14).
+
+- Added `engine/ice.js`, a pure hex-grid slide resolver. Walking/forced movement onto an icy hex grants one **zero-cost extra step in the same direction**; entering another icy hex repeats the effect. An obstruction, objective, wall or occupied destination stops the chain. Ice is not consumed.
+- Implemented icy slide handling for saved hero movement queues, monster movement and hero Push/Pull. The original movement type is preserved: a Push into ice extends the forced displacement; a normal Move can trigger a doorway when sliding. Jump, Fly and Teleport ignore icy slides, including on the final hex.
+- Hero slide steps are inserted as serializable queued events before the remaining movement/action completion events. If a slide reaches a trap or hazardous tile, damage prevention pauses the queue on that reached hex and persists the progress through reload.
+- A slide cannot spend movement points; a slide that diverges from the originally selected hero route ends that Move at the new position instead of teleporting the hero to a stale path. For planned non-divergent continuations, already traversed icy hex events are skipped to avoid duplicating them.
+- Hex-map overlays now visibly distinguish icy, hazardous and trap terrain in custom saved maps.
+- Pure unit tests exercise chained slides, blocked slides, odd-row direction consistency, forced movement inheritance, and Jump/Flying exemptions. Browser tests exercise unobstructed and blocked hero slides, hazardous interruptions, forced Push sliding and monster sliding into attack range.
+- Emberwatch's intentionally randomized resolution of genuine tactical ties is unchanged.
+
+**Known gaps:** This increment resolves slides once a path enters ice, but monster focus/pathfinding does not yet fully incorporate the *prospective* icy slides while planning attack positions, as the official FAQ requires. The automatic hero pathfinder may stop an action after an unplanned slide rather than recomputing the route within unused movement allowance; players cannot manually choose paths. Complex forced-move destination optimization, door-reveal edge cases and multiplayer concurrent event synchronization still need work. Ice does not appear in the default original demonstration scenario unless supplied through a saved state.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
