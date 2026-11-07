@@ -1,3 +1,11 @@
+# Emberwatch v0.12.9 — Mixed Hero Action With Required Target
+
+The shared instruction compiler now supports deferred mandatory Heal targeting after an earlier resolved ability. The live hero queue pauses with a persisted target decision; a required step cannot be skipped and its target is revalidated after reload. *Last Light* demonstrates Guard 2 followed by required Heal 1. Regression tests cover execution and target invalidation.
+
+F2 remains open for mixed attacks, movement and advanced effects.
+
+---
+
 # Emberwatch v0.12.6 — Structured Hero Action Compiler
 
 Card instruction arrays can now compile directly into serializable live combat-queue events. All Guard cards use the shared compiler; *Aid the Fallen* has been migrated to explicit ordered card data. Invalid or unsupported instructions are rejected before altering combat state. Conformance tests cover compile ordering, persistence and normal gameplay.
