@@ -50,6 +50,16 @@ A hex-shaped area uses axial offsets (not odd-row screen-coordinate offsets) fro
 
 Pass `{ anchor: { q: 2, r: 1 } }` for the corresponding ability choice.
 
+## v0.9.2 checkpoint: resumable sequences and area anchors
+
+The independent `engine/abilities.js` now provides `beginSequence(state, actorId, steps)` and `resumeSequence(snapshot, choice)`. The cursor is ordinary JSON: the player can pause before a target/path selection, serialize the entire snapshot, and resume without rerunning previously resolved ability steps. No hidden in-memory callback or executable function is stored in the cursor. These methods currently pause **between whole ability steps**; nested attack interrupts still use the live game's dedicated pending-damage/pending-attack state rather than the generic cursor.
+
+`areaHexes(anchor, offsets)` converts axial shape offsets to the game's odd-row coordinates. In the live game, the original Runesmith **Arc Pulse** now allows choosing a legal anchor and then targeting each enemy caught in its two-hex area pattern. Attack range applies to the anchor, not independently to every affected hex. A separate Chromium regression covers an affected enemy beyond anchor range.
+
+The area implementation is still deliberately narrow: no shape rotation, multi-hex obstacles, obstacle edge LOS, multi-hex figures, modifier advantage, or generic interruption queue for all monsters yet. Monsters retain their existing AI/card implementation pending a later dedicated port into the shared interpreter.
+
+---
+
 ## Fidelity boundaries
 
 The standalone interpreter currently supports **ordered, immediate effects**, but the live game only uses a subset of those effects; it is not a complete Frosthaven action pipeline.
