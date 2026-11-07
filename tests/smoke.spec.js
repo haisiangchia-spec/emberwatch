@@ -170,6 +170,8 @@ test('long rest commits initiative 99, heals, and loses chosen discard card', as
     p.hand=[0,1,2,3];
     p.discard=[4,5];
     p.hp=9;
+    // Isolate long-rest timing from monster attacks and damage prompts.
+    s.enemies=[];
     localStorage.setItem(key,JSON.stringify(s));
   });
   await page.reload();
