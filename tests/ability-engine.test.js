@@ -320,9 +320,29 @@ const compiledTail=abilities.compileHeroQueue('p0',postHit[0].action,
 assert.deepEqual(compiledTail.map(e=>e.type),[
  'heroAbilityEffect','heroAbilityEffect','heroActionComplete']);
 assert.deepEqual(JSON.parse(JSON.stringify(compiledTail)),compiledTail);
+const repeatedAttacks=abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:'action',range:1},
+ {type:'attack',value:2,range:2},
+ {type:'shield',value:1,duration:'round',optional:true}
+],{targetId:'e0'});
+assert.deepEqual(repeatedAttacks.map(e=>e.type),[
+ 'heroAttackHit','heroAttackLinked','heroAttackLinked','heroAttackPostHit']);
+assert.deepEqual(repeatedAttacks[0].action.postAttackSteps,[
+ {type:'attack',value:2,range:2},
+ {type:'shield',value:1,duration:'round',optional:true}
+]);
+assert.deepEqual(JSON.parse(JSON.stringify(repeatedAttacks)),repeatedAttacks);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
- {type:'attack',value:4},{type:'attack',value:4}
-],{targetId:'e0'}),/Only one attack/);
+ {type:'attack',value:4,range:1},{type:'attack',value:2}
+],{targetId:'e0'}),/Invalid repeated Attack/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:4,range:1},{type:'shield',value:1},
+ {type:'attack',value:2,range:1}
+],{targetId:'e0'}),/Repeated attacks must be consecutive/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:4,range:1},{type:'attack',value:2,range:1},
+ {type:'attack',value:2,range:1},{type:'attack',value:2,range:1}
+],{targetId:'e0'}),/Repeated attacks must be consecutive/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'attack',value:4},{type:'heal',value:2}
 ],{targetId:'e0'}),/Post-attack mandatory targets require deferred targeting/);
