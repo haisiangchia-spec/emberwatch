@@ -958,7 +958,7 @@ function icySlideFrom(from,entry,unit,mode='walk'){
    icy:state.icy||[],mode,
    canEnter:hex=>inside(hex.q,hex.r)&&discovered(hex.q,hex.r)&&
      !wall(hex.q,hex.r)&&!rock(hex.q,hex.r)&&
-     !unitAt(hex.q,hex.r)&&
+     (!unitAt(hex.q,hex.r)||unitAt(hex.q,hex.r)===unit)&&
      !(mode==='forced'&&doorAt(hex.q,hex.r)&&
        !state.scenario.revealed.includes(doorAt(hex.q,hex.r).reveal))
  })
@@ -990,7 +990,11 @@ function moveQueuedMonsterStep(event){
      // remaining slide with current board occupants before taking the next
      // step; if the chain has changed, stop rather than taking stale steps.
      if(hex.slide){
-       const allowed=icySlideFrom(path[i-1]||from,from,enemy,'walk');
+       let entryIndex=i-1;
+       while(entryIndex>0&&path[entryIndex].slide)entryIndex--;
+       const entry=path[entryIndex],
+         origin=entryIndex===0?plan.path[0]:path[entryIndex-1],
+         allowed=icySlideFrom(origin,entry,enemy,'walk');
        if(!allowed.some(p=>p.q===hex.q&&p.r===hex.r)){
          log(enemy.name+' stops because an icy slide was interrupted.');
          break
