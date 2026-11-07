@@ -101,3 +101,18 @@ assert.deepEqual(cursor.events.map(e=>e.type),['shield','attack','attack','heal'
 assert.equal(cursor.state.units.ally.hp,9);
 assert.equal(planned.state.units.e1.hp,8,'serialized pipeline must not mutate original state');
 assert.throws(()=>abilities.resumeSequence(paused,{targets:['ally']}),/Invalid target/);
+
+const oldMonster=abilities.monsterSteps({move:2,attack:2,range:1},{move:1,attack:1,range:0,condition:'wound'});
+assert.deepEqual(oldMonster,[{type:'move',value:3},{type:'attack',value:3,range:1,condition:'wound'}]);
+const scriptedMonster=abilities.monsterSteps({move:2,attack:2,range:1},{
+ move:-99,attack:-99,abilities:[{type:'move',value:3},{type:'attack',value:3,range:1,condition:'wound'}]
+});
+assert.deepEqual(scriptedMonster,oldMonster);
+const monsterScene={units:{ash:{id:'ash',team:'monsters',q:1,r:1,hp:6,maxHp:6},
+ hero:{id:'hero',team:'heroes',q:2,r:1,hp:10,maxHp:10}}};
+const monsterQueue=abilities.beginSequence(monsterScene,'ash',scriptedMonster);
+const monsterMove=abilities.resumeSequence(monsterQueue,{path:[]});
+assert.equal(monsterMove.cursor.index,1);
+const monsterAttack=abilities.resumeSequence(monsterMove,{targets:['hero']});
+assert.equal(monsterAttack.state.units.hero.hp,7);
+assert.equal(monsterAttack.done,true);
