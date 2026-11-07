@@ -1,8 +1,13 @@
-# Emberwatch v0.11.0 — Terrain Entry and Forced Movement
+# Emberwatch v0.11.1 — Stepwise Hero Terrain Movement
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Hero Move/Jump/Fly actions now enqueue **each traversed hex**, saving the chosen route and resolving dangerous terrain per step.
+- Trap and hazardous-terrain damage pauses the route for card-loss damage prevention; the player may reload while deciding, then resume with no duplicated tile triggers or movement.
+- A hero who falls to terrain damage cannot complete the rest of the move. Jump ignores intermediate terrain but checks its landing hex; Fly ignores both.
+- The latest code-bearing run passed **62 Chromium browser regression tests**. The current prototype still uses automatic movement paths and does not fully implement all special terrain or multiplayer edge cases.
 
 - Added a shared terrain entry resolver for traps and hazardous terrain. Trap damage scales by scenario level and removes the trap; hazardous tiles persist and damage on re-entry. Flying and Jump exemptions are supported at the rules-engine level.
 - Monster movement now checks each traversed hex for terrain effects, and a monster killed en route cannot perform its queued attack. Hero Push/Pull onto a dangerous tile triggers the same resolver.
