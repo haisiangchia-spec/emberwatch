@@ -171,6 +171,27 @@ Compared against the Frosthaven rulebook (monster focus and movement, pp. 41–4
 
 ---
 
+## Monster ranged positioning audit — v0.10.7
+
+Primary verification references: the [Frosthaven Official FAQ §5.8](https://cephalofairgames.github.io/frosthaven-faq/) and published Frosthaven rulebook monster-turn guide (pp. 74–75).
+
+**Implemented in this increment:**
+- Focus choice remains **independent of ranged Disadvantage**. A monster can still focus an adjacent enemy rather than a different, farther enemy.
+- Once the primary focus is selected, a ranged attacker adjacent to it attempts a **minimum-cost safe retreat** to a legal unoccupied hex that remains within attack range and line of sight, avoiding paths through traps or hazardous terrain. The primary focus remains unchanged.
+- A monster already Muddled (without a cancelling Strengthen condition) does not move solely to avoid adjacent ranged Disadvantage.
+- Adjacent ranged attacks actually draw with Disadvantage through the shared modifier-selection engine; immobilized monsters cannot retreat and therefore make disadvantaged attacks if appropriate. Multiple disadvantage sources do not stack.
+- Explicitly ranged attacks with range 1 also receive adjacent Disadvantage even though retreat cannot remove it.
+- The pure `rangedRetreat` helper in `engine/monster-focus.js` has deterministic tests for movement allowance, conditions, occupancy, negative terrain and line of sight. Browser regressions test retreat, save/reload, Muddle, Immobilize and Range 1 adjacency.
+
+**Known incomplete rules:**
+- Ranged multi-target attack-position optimization (maximize additional targets before minimizing Disadvantage and movement) is not yet implemented.
+- The full movement-to-attack-hex process, including improving path progress when the destination is out of movement range, icy terrain and choosing between equally valid routes, still needs audit.
+- Ranged modifier handling for all special class and monster abilities, alternate targets, rolling modifiers and Advantage/Disadvantage modifier-deck edge cases is not complete.
+- The current deterministic row/column tie-break is a prototype convenience; official remaining ambiguities generally permit party choice.
+- This increment uses original demonstration card data, not any claim of complete Frosthaven content or fidelity.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
