@@ -1584,3 +1584,90 @@ test('jumping across trap ignores intermediate terrain but landing on hazardous 
  expect(st.players[1].hp).toBe(st.players[1].maxHp-2);
  expect(errors).toEqual([]);
 });
+
+test('hero resolves each hazardous hex separately with reload between damage prompts',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:26}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.traps=[];s.hazardous=[[1,4],[2,4]];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];s.scenario.level=3;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue.index).toBe(1);
+ expect(st.pendingDamage.amount).toBe(2);
+ expect([st.players[0].q,st.players[0].r]).toEqual([1,4]);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue.index).toBe(2);
+ expect(st.pendingDamage.amount).toBe(2);
+ expect([st.players[0].q,st.players[0].r]).toEqual([2,4]);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(st.players[0].maxHp-4);
+ expect(st.hazardous).toEqual([[1,4],[2,4]]);
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.journal.filter(x=>x.includes('enters hazardous'))).toHaveLength(2);
+ expect(errors).toEqual([]);
+});
+
+test('lethal hero terrain damage cancels remaining queued movement and advances the turn',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:26},{type:'player',id:1,initiative:40}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[0].hp=2;s.players[1].picked=[0,1];
+  s.traps=[[1,4]];s.hazardous=[];s.walls=[];s.rocks=[];s.difficult=[];
+  s.scenario.revealed=[0,1,2];s.scenario.level=3;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(0);
+ expect(st.players[0].exhausted).toBe(true);
+ expect([st.players[0].q,st.players[0].r]).toEqual([1,4]);
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.turnIndex).toBe(1);
+ expect(st.journal.filter(x=>x.includes('enters trap'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
+
+test('flying hero ignores hazardous and trap damage even on the destination hex',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:2,initiative:21}];s.turnIndex=0;
+  s.players[2].picked=[0,2];s.traps=[[2,5]];s.hazardous=[[2,5]];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];s.scenario.level=3;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="5"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect([st.players[2].q,st.players[2].r]).toEqual([2,5]);
+ expect(st.players[2].hp).toBe(st.players[2].maxHp);
+ expect(st.traps).toEqual([[2,5]]);
+ expect(st.hazardous).toEqual([[2,5]]);
+ expect(errors).toEqual([]);
+});
