@@ -2699,3 +2699,64 @@ test('F2 mandatory target is invalidated after checkpoint reload until another e
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 live Shield Rush compiles Shield before attack exactly once',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];s.players[0].active=[];
+  s.modifiers.heroes[0].draw=[0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:10,maxHp:10,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(x=>x.type==='shield'&&x.value===1)).toHaveLength(1);
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.enemies[0].conditions.immobilize).toBe(true);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ await page.reload();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(x=>x.type==='shield')).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
+
+test('F2 mixed Shield then Attack survives retaliation interruption without replay',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];s.players[0].active=[];
+  s.modifiers.heroes[0].draw=[0,0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:10,maxHp:10,conditions:{},
+   active:[{type:'retaliate',value:2,range:1,duration:'round'}]}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(x=>x.type==='shield')).toHaveLength(1);
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(7);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.players[0].active.filter(x=>x.type==='shield')).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
