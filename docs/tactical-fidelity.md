@@ -369,6 +369,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.7 mandatory targeted Heal compilation
+
+- The generic `compileHeroQueue` compiler accepts a **selected target ID** for mandatory `heal` instructions, resolves action-scaled values, and emits `heroAbilityEffect` events followed by `heroActionComplete`.
+- All existing live hero Heal card actions now use this compiler path. Their prior target-picker UI remains in place; live execution revalidates the selected ally against current range/line of sight and applies the established healing/Poison/Wound-cleansing rules exactly once.
+- Saved combat queues resume compiled healing after interruptions and preserve element infusion and action completion. New unit/browser conformance tests cover selected target binding, scaling, cleansing, and reload.
+- This is **not F2 closure**. Mandatory conditions, generic attacks, movement, interactive arbitrary sequences and full class mechanics still have dedicated code paths.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
