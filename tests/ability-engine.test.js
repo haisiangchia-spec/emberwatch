@@ -198,3 +198,28 @@ assert.throws(()=>abilities.optionalTargetIds(optionalCandidatesScene,'hero',
 assert.throws(()=>abilities.optionalTargetIds(optionalCandidatesScene,'hero',
  {type:'heal',range:-1}),/Invalid optional ability range/);
 console.log('F2 shared optional target eligibility assertions passed');
+
+
+const sequenceAction={kind:'guard',value:5,which:'bottom',cardIndex:2,asBasic:false};
+const sequenceEvents=abilities.compileHeroQueue('p3',sequenceAction,[
+ {type:'guard',value:'action'},
+ {type:'shield',value:2,duration:'round'},
+ {type:'heal',value:2,range:3,optional:true},
+ {type:'condition',condition:'muddle',range:2,optional:true}
+]);
+assert.deepEqual(sequenceEvents.map(e=>e.type),[
+ 'heroGuard','heroAbilityEffect','heroAbilityEffect','heroAbilityEffect','heroActionComplete']);
+assert.equal(sequenceEvents[0].value,5);
+assert.equal(sequenceEvents[2].effect.optional,true);
+assert.equal(sequenceEvents[3].effect.condition,'muddle');
+assert.deepEqual(JSON.parse(JSON.stringify(sequenceEvents)),sequenceEvents);
+assert.equal(sequenceEvents[4].action.cardIndex,2);
+assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
+ {type:'teleport',value:1}]),/Unsupported hero instruction/);
+assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
+ {type:'heal',value:2,range:2}]),/Mandatory targeted effects/);
+assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
+ {type:'guard',value:'missing'}]),/Invalid Guard/);
+assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
+ {type:'guard',value:1,optional:true}]),/Guard cannot be optional/);
+console.log('F2 structured hero card queue compilation conformance assertions passed');
