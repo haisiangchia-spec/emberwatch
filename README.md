@@ -1,8 +1,11 @@
-# Emberwatch v0.10.2 — Queued Hero Attacks
+# Emberwatch v0.10.3 — Persistent Area and Multi-Targeting
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Multi-target and area-attack decisions now persist across reloads, including chosen anchor, affected figures, completed targets and remaining attacks.
+- After a Retaliate damage-prevention pause, the next target remains available without replaying resolved hits. All 40 Chromium tests passed on the latest code-bearing run.
 
 - Hero attacks now resolve in separate queued hit and post-hit events, with serialized Push/Pull choices that survive a page reload.
 - Retaliate is checked after the target's displacement, and unresolved queue choices cannot be bypassed by ending the turn.
