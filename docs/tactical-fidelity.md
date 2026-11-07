@@ -271,6 +271,21 @@ Rule reference: [Frosthaven Official FAQ §5.1](https://cephalofairgames.github.
 
 ---
 
+## Monster route planning accounts for prospective icy slides — v0.11.3
+
+Implemented:
+- `monsterRoutes()` now models walking into an icy hex as **one paid movement edge followed by zero-cost mandatory slides**. The route planner evaluates the resulting landing hex, rather than treating intermediate icy hexes as valid stopping points.
+- Every hex crossed during the paid entry and free slide is included in the serializable planned route (slides marked `slide:true`). Negative terrain encountered along the complete chain contributes to the hazard-avoidance ranking.
+- The primary focus selector therefore compares the **actual movement-point cost including free icy slides** and can prioritize a geometrically farther hero who can be attacked with fewer paid steps via ice.
+- Ranged retreat and multi-target monster destination selection use the same ice-aware route costs and paths.
+- Monster movement consumes the snapshotted path sequentially, charging zero movement points for planned slide steps, applying trap/hazard entry on each hex, and stopping on obstacles, occupied slide destinations or a lethal hazard. It retains the existing exception allowing monsters to pass through allied figures on ordinary (non-slide) path steps.
+- Random selection remains automatic for genuine equal-ranking tactical outcomes, as explicitly requested by the user; resolved plans are saved before monster movement/damage prompts.
+- Chromium tests verify an ice-route plan with explicit free slide steps and a competing-focus example where the farther hero becomes optimal by ice-aware movement cost. Existing hero/monster ice and reload tests remain in the suite. Latest code-bearing run 42382493553 passed **68 Chromium browser tests**.
+
+**Not complete:** Exact official rules for icy sliding with dynamic occupancies, door opening, nonstandard movement, movement through allied figures, and alternative paths still require further conformance tests. Path choice is automatic and does not provide manual routing or party control of ties. The prototype's original card content remains limited, and online shared-state writes are not atomic. Milestone 1 remains a work in progress.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
