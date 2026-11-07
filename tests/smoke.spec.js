@@ -1805,3 +1805,41 @@ test('monster chains free icy movement to reach a hero and attacks only once aft
  expect(st.modifiers.monsters.discard).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('ice-aware focus prefers farther hero reachable with fewer paid movement points',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.scenario={kind:'vault',revealed:[0,1,2],level:1,seal:false,exitReached:false};
+  s.order=[{type:'player',id:0,initiative:10},{type:'player',id:1,initiative:11},
+    {type:'enemy',id:'Ash Raider',initiative:20}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.players[0].q=5;s.players[0].r=3;
+  s.players[1].q=1;s.players[1].r=0;
+  for(let i=2;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'ice-focus',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  const open=new Set(['1,3','2,3','3,3','4,3','5,3','1,2','1,1','1,0']);
+  s.walls=[];for(let q=0;q<8;q++)for(let r=0;r<6;r++)
+    if(!open.has(q+','+r))s.walls.push([q,r]);
+  s.rocks=[];s.difficult=[];s.traps=[];s.hazardous=[];s.icy=[[2,3],[3,3]];
+  s.monsterReveals={'Ash Raider':{name:'Ice Focus',initiative:20,abilities:[
+    {type:'move',value:1},{type:'attack',value:2,range:1}
+  ]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ const plan=st.monsterTurnPlans['ice-focus'];
+ expect(plan.targetId).toBe(st.players[0].id);
+ expect(plan.stop).toEqual({q:4,r:3});
+ expect(plan.path.filter(p=>p.slide)).toHaveLength(2);
+ expect(st.pendingDamage.heroIndex).toBe(0);
+ expect(st.journal.filter(x=>x.includes(' slides to '))).toHaveLength(2);
+ expect(errors).toEqual([]);
+});
