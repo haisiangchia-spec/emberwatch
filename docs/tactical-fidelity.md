@@ -378,6 +378,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.8 compiled hero attacks
+
+- The shared `compileHeroQueue` now supports a selected standalone `attack` instruction. It produces the existing serialized `heroAttackHit`, ordered linked-condition/Push/Pull steps, and `heroAttackPostHit` events, without emitting a premature generic action-completion event.
+- All hero attack selections in the browser UI now compile through this contract. The existing hit resolver, modifier deck, multi-target continuation, forced movement, and retaliation behavior remain authoritative during this migration.
+- Attack compilation rejects unsupported combined attack sequences and optional attacks rather than silently dropping instructions. Unit and browser tests verify event order, basic hits, linked Push, pause/reload, and exactly-once modifier draws.
+- **F2 is not complete:** multi-step attacks with non-attack instructions, arbitrary mandatory target prompts, movement and full persistent/class ability families still need generalized compilation and conformance testing.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
