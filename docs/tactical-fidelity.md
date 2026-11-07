@@ -111,6 +111,19 @@ Implemented and tested:
 
 ---
 
+## Milestone 1 continuation — v0.10.3 persistent multi-target and area decisions
+
+Implemented in the HTML5 game:
+- `state.pendingTargeting` persists an active hero's multi-target or area-attack action, including the selected anchor's target IDs, remaining attack count, already-hit IDs and legal hex choices.
+- The interface restores the pending decision after a reload before an area anchor is chosen and between individual hits.
+- Retaliate/damage-prevention interruptions retain this selection; resolving the interruption advances to the next target **without repeating prior attack modifier draws**.
+- Targeting state is cleared when the action completes, is skipped or the hero ends the turn. Existing forced-movement prompts retain priority while the combat queue is paused.
+- Browser tests confirm an uninterrupted multi-target action, an anchored area attack through repeated reloads, and a first-target Retaliate interruption followed by a second hit. The code-bearing GitHub Actions run **42375619512** passed **40 Chromium tests**.
+
+**Still incomplete:** The unified execution milestone continues with monster focus/movement decisions, fully serialized hero card-selection state beyond targeting, advanced ability sequences and state consistency in actual four-client play. The tests establish only the implemented example paths, not full tactical conformance.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
