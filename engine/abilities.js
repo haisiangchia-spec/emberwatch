@@ -138,13 +138,14 @@
       !action||typeof action!=='object'||!Array.isArray(steps)||!steps.length)
      throw Error('Invalid hero action sequence');
    const allowed=new Set(['guard','shield','retaliate','infuse','heal','condition','attack']);
-   // Attacks own a target-by-target continuation that can pause for Push/Pull,
-   // retaliation or additional targets. Do not put an unconditional action
-   // completion after that continuation or silently ignore other steps.
+   // Attacks retain their existing target-by-target continuation. Allow
+   // ordered pre-attack self effects, but never queue effects after a hit:
+   // post-hit may suspend for forced movement, retaliation or more targets.
    if(steps.some(step=>step?.type==='attack')){
-     if(steps.length!==1||steps[0]?.type!=='attack')
-       throw Error('Attack sequences require a standalone attack instruction');
-     const step=copy(steps[0]);
+     if(steps.at(-1)?.type!=='attack'||steps.slice(0,-1).some(step=>
+       !['shield','retaliate','infuse'].includes(step?.type)||step.optional))
+       throw Error('Attack must be terminal after mandatory self effects');
+     const step=copy(steps.at(-1));
      if(step.optional)throw Error('Optional attack selection is not yet supported');
      if(step.value==='action')step.value=action.value;
      if(!Number.isFinite(step.value)||step.value<0)
@@ -154,7 +155,15 @@
      if(action.kind!=='attack')throw Error('Attack action kind required');
      const attackAction={...copy(action),value:step.value};
      const linked=linkedAttackSteps(attackAction);
+     const prefix=steps.slice(0,-1).map(instruction=>{
+       const effect=copy(instruction);
+       if(effect.value==='action')effect.value=action.value;
+       if(effect.value!==undefined&&(!Number.isFinite(effect.value)||effect.value<0))
+         throw Error('Invalid pre-attack effect value');
+       return {type:'heroAbilityEffect',actorId,effect};
+     });
      return [
+       ...prefix,
        {type:'heroAttackHit',actorId,targetId,action:copy(attackAction)},
        ...linked.map(effect=>({type:'heroAttackLinked',actorId,targetId,
          step:copy(effect),action:copy(attackAction)})),
