@@ -208,6 +208,21 @@ Primary references: [Frosthaven Official FAQ §5.8](https://cephalofairgames.git
 
 ---
 
+## Intentional Emberwatch rules exception — randomized ambiguous choices (v0.10.9)
+
+**User-selected deviation from Frosthaven:** When a monster has two or more options that remain genuinely equal after all applicable tactical priorities have been evaluated, Emberwatch **automatically chooses at random and executes the result**. It does not ask the party to choose. This exception applies to ties in monster focus, equally optimal attack hexes, safe ranged retreat destinations, multi-target attack destinations, secondary target choices and attack order.
+
+- All higher-priority considerations still apply: hazard avoidance, focus, maximum additional targets, minimizing disadvantage and movement points where applicable. Random selection never overrides a strictly better legal option.
+- The pure functions in `engine/monster-focus.js` accept an injected random-number source for deterministic conformance tests; gameplay uses `Math.random`.
+- Resolved decisions, planned destinations, selected targets and ordered per-target attack events are persisted in the combat queue/turn plan. Reloading during a damage-prevention prompt does **not** reroll an already made decision or repeat earlier attacks.
+- No random draw is consumed when only one legal option exists.
+- The former deterministic hero-seat/hex-coordinate tie-breaks are retained only for stable diagnostic ordering; they no longer force an ambiguous gameplay outcome.
+- This exception applies only to **genuine ties**. The remaining monster-pathfinder and unsupported special-effect cases still require separate completeness audits.
+
+This replaces earlier roadmap items calling for party-controlled final monster tie-breakers. Full tactical fidelity for Emberwatch henceforth means **official tactical priority rules except for this explicitly accepted randomized ambiguity rule**.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
