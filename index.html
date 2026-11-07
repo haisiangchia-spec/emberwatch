@@ -337,7 +337,7 @@ function resolveIncomingDamage(modeChoice,cards=[]){
  if(pd.condition&&p.hp>0)addCondition(p,pd.condition);
  if(pd.attack&&p.hp>0&&!p.exhausted)retaliateAgainst(pd.sourceId,pd.heroIndex);
  const source=pd.source;state.pendingDamage=null;state.phase='act';
- if(pd.resume==='enemy'){enemyTurn(pd.monsterType);if(!state.pendingDamage){state.enemyCursor=0;state.turnIndex++;advanceAutomated()}else commit()}
+ if(pd.resume==='enemy'){resumeLegacyMonsterTurn(pd.monsterType)}
  else if(pd.resume==='queue'){resumeCombatQueue()}
  else if(pd.resume==='heroStart'){resumeHeroAfterWound(pd.heroIndex)}
  else if(pd.resume==='heroAttack'){resumeHeroAttack()}
@@ -525,6 +525,17 @@ function startMonsterCombatQueue(type){
  log(type+' acts: '+state.monsterReveals[type].name+' (initiative '+state.monsterReveals[type].initiative+').');
  state.combatQueue=window.EmberwatchCombatQueue.create('monster',
    enemies.map(e=>({type:'monsterTurn',actorId:e.id,monsterType:type})));
+ runCombatQueue()
+}
+function resumeLegacyMonsterTurn(type){
+ // Saves written by pre-queue builds can contain a pending attack with a
+ // legacy enemyCursor. Its attacking monster already acted; enqueue only
+ // the remaining figures rather than replaying modifier draws or movement.
+ const remaining=state.enemies.filter(e=>e.name===type&&e.hp>0).slice(state.enemyCursor||0);
+ state.enemyCursor=0;
+ if(!remaining.length){state.turnIndex++;advanceAutomated();return}
+ state.combatQueue=window.EmberwatchCombatQueue.create('monster',
+   remaining.map(e=>({type:'monsterTurn',actorId:e.id,monsterType:type})));
  runCombatQueue()
 }
 function resumeCombatQueue(){
