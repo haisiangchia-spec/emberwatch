@@ -1955,3 +1955,73 @@ test('monster stops an old planned icy chain when a slide hex becomes blocked',a
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+test('saved hero ice slide stops if its supporting ice is removed before resumption',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:20}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[0].q=1;s.players[0].r=4;
+  s.icy=[];s.traps=[];s.hazardous=[];s.walls=[];s.rocks=[];
+  s.combatQueue={version:1,owner:'hero',index:1,paused:true,pauseReason:'terrainDamage',
+   events:[
+    {type:'heroMoveStep',actorId:'p0',hex:{q:1,r:4},movementMode:'walk',finalStep:false},
+    {type:'heroMoveStep',actorId:'p0',hex:{q:2,r:4},movementMode:'walk',icyExtra:true,finalStep:false},
+    {type:'heroMoveStep',actorId:'p0',hex:{q:3,r:4},movementMode:'walk',icyExtra:true,finalStep:true},
+    {type:'heroActionComplete',actorId:'p0',action:{
+      kind:'move',which:'bottom',cardIndex:0,asBasic:true,value:3}}
+   ]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Terrain',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([1,4]);
+ expect(st.combatQueue).toBeNull();
+ expect(st.journal.some(x=>x.includes('planned hex is no longer accessible'))).toBe(true);
+ expect(errors).toEqual([]);
+});
+
+test('monster may cross an allied figure on ordinary steps but not end on one',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'enemy',id:'Ash Raider',initiative:20},
+    {type:'player',id:0,initiative:30}];s.turnIndex=0;
+  s.players[0].q=5;s.players[0].r=3;
+  for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.scenario.revealed=[0,1,2];
+  s.enemies=[
+    {id:'moving-ally',name:'Ash Raider',hp:9,maxHp:9,q:1,r:3,conditions:{}},
+    {id:'stationary-ally',name:'Ash Raider',hp:9,maxHp:9,q:2,r:3,conditions:{}}
+  ];
+  s.walls=[];s.rocks=[];s.icy=[];s.traps=[];s.hazardous=[];s.difficult=[];
+  s.monsterTurnPlans={'moving-ally':{skip:false,targetId:'p0',stop:{q:3,r:3},
+    focused:true,spec:{move:2,attack:2,range:1},
+    path:[{q:1,r:3},{q:2,r:3},{q:3,r:3}]}};
+  s.monsterReveals={'Ash Raider':{name:'Ally Passing',initiative:20,abilities:[
+    {type:'move',value:2},{type:'attack',value:2,range:1}]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  s.combatQueue={version:1,owner:'monster',index:2,paused:true,pauseReason:'damage',
+   events:[
+    {type:'monsterStart',actorId:'moving-ally',monsterType:'Ash Raider'},
+    {type:'monsterFocus',actorId:'moving-ally',monsterType:'Ash Raider'},
+    {type:'monsterMove',actorId:'moving-ally',monsterType:'Ash Raider',stepIndex:0,step:{type:'move',value:2}},
+    {type:'monsterAttack',actorId:'moving-ally',monsterType:'Ash Raider',stepIndex:1,step:{type:'attack',value:2,range:1}},
+    {type:'monsterFinish',actorId:'moving-ally',monsterType:'Ash Raider'}]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Prior attack',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies.find(e=>e.id==='moving-ally').q,st.enemies.find(e=>e.id==='moving-ally').r]).toEqual([3,3]);
+ expect([st.enemies.find(e=>e.id==='stationary-ally').q,st.enemies.find(e=>e.id==='stationary-ally').r]).toEqual([2,3]);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
