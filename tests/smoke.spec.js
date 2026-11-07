@@ -1010,3 +1010,44 @@ test('multi-target attack continues after first defender retaliates and player r
  expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(2);
  expect(errors).toEqual([]);
 });
+
+test('queued monster focus and movement are committed before attack interruption and reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'focus-ash',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{
+    name:'Focus Probe',initiative:20,move:0,attack:0,range:0,
+    abilities:[{type:'move',value:0},{type:'attack',value:2,range:1}]
+  }};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ const initial=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(initial.combatQueue.paused).toBe(true);
+ expect(initial.combatQueue.index).toBe(4);
+ const focus=initial.monsterTurnPlans['focus-ash'];
+ expect(focus.focused).toBe(true);
+ expect(focus.targetId).toMatch(/^p[0-3]$/);
+ expect(initial.monsterFocusTrace['focus-ash'][0].targetId).toBe(focus.targetId);
+ const draws=initial.modifiers.monsters.discard.length;
+ await page.reload();
+ const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(restored.monsterTurnPlans['focus-ash']).toEqual(focus);
+ expect(restored.modifiers.monsters.discard.length).toBe(draws);
+ await page.locator('#takeDamage').click();
+ const finished=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(finished.combatQueue).toBeNull();
+ expect(finished.monsterTurnPlans['focus-ash']).toBeUndefined();
+ expect(finished.monsterFocusTrace['focus-ash']).toBeUndefined();
+ expect(finished.journal.filter(x=>x.includes(' focuses '))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
