@@ -130,3 +130,39 @@ assert.equal(abilities.retaliation({...retaliationOrigin,hp:0},{q:2,r:1,hp:6}),0
 
 assert.equal(calculate({power:0,poison:true,miss:true}).damage,0,'null hit overrides poison');
 assert.equal(calculate({power:6,poison:true,shield:2,miss:true}).damage,0);
+
+
+const optionalScene=state();
+const optionalSteps=[
+ {type:'shield',value:2,duration:'round',optional:true},
+ {type:'heal',value:3,range:2,optional:true},
+ {type:'attack',value:2,range:2,optional:true}
+];
+let opt=abilities.beginSequence(optionalScene,'hero',optionalSteps);
+const optWait=abilities.resumeSequence(opt);
+assert.equal(optWait.awaiting.optional,true,'optional automatic effect requires an explicit decision');
+assert.equal(optWait.cursor.index,0);
+assert.deepEqual(optWait.state,optionalScene);
+const serialized=JSON.parse(JSON.stringify(optWait));
+opt=abilities.resumeSequence(serialized,{skip:true});
+assert.equal(opt.cursor.index,1);
+assert.equal(opt.state.units.hero.active,undefined);
+assert.deepEqual(opt.events,[{type:'skipped',stepIndex:0}]);
+const healWait=abilities.resumeSequence(JSON.parse(JSON.stringify(opt)));
+assert.equal(healWait.awaiting.type,'heal');
+assert.equal(healWait.awaiting.optional,true);
+opt=abilities.resumeSequence(healWait,{targets:['ally']});
+assert.equal(opt.cursor.index,2);
+assert.equal(opt.state.units.ally.hp,10,'healing caps at max HP');
+const attackWait=abilities.resumeSequence(JSON.parse(JSON.stringify(opt)));
+assert.equal(attackWait.awaiting.type,'attack');
+opt=abilities.resumeSequence(attackWait,{skip:true});
+assert.equal(opt.done,true);
+assert.equal(opt.cursor,null);
+assert.deepEqual(opt.events.map(x=>x.type),['skipped','heal','skipped']);
+assert.equal(opt.state.units.e1.hp,8,'skipped attack never draws or changes target');
+assert.equal(abilities.healAmount({hp:8,maxHp:10},5),2);
+assert.equal(abilities.healAmount({hp:10,maxHp:10},3),0);
+assert.throws(()=>abilities.healAmount({hp:8,maxHp:10},-1),/Invalid heal/);
+assert.throws(()=>abilities.healAmount({hp:8,maxHp:10},NaN),/Invalid heal/);
+console.log('F2 optional-step checkpoint and healing conformance assertions passed');
