@@ -682,7 +682,10 @@ function executeQueuedHeroEffect(actor,effect){
 function optionalHeroTargets(pending){
  const actor=state.players.find(p=>p.id===pending?.actorId&&p.hp>0&&!p.exhausted);
  const effect=pending?.effect;
- if(!actor||!['heal','condition'].includes(effect?.type))return [];
+ if(!actor)return [];
+ if(effect?.type==='attack')
+   return targets(actor,effect.range??1,'attack').filter(e=>e.hp>0);
+ if(!['heal','condition'].includes(effect?.type))return [];
  const figures=[...state.players.filter(p=>p.hp>0&&!p.exhausted),
    ...state.enemies.filter(e=>e.hp>0)];
  const units=Object.fromEntries(figures.map(p=>[p.id,{
@@ -708,7 +711,35 @@ function resolveOptionalHeroEffect(execute){
  const pending=state.pendingAbilityChoice,q=state.combatQueue;
  if(!pending||!q?.paused||
    !['optionalAbility','abilityTarget'].includes(q.pauseReason))return;
- if(!execute&&pending.mandatory)return;
+ if(!execute&&pending.mandatory&&
+    !(pending.effect.type==='attack'&&optionalHeroTargets(pending).length===0))return;
+ if(pending.effect.type==='attack'){
+   const checkpoint=q.events[pending.queueIndex];
+   if(pending.queueIndex!==q.index-1||checkpoint?.type!=='heroAttackTargetChoice')
+     throw Error('Attack target checkpoint no longer matches combat queue');
+   const actor=state.players.find(p=>p.id===pending.actorId&&p.hp>0&&!p.exhausted);
+   const eligible=optionalHeroTargets(pending);
+   const target=eligible.find(e=>e.id===pending.targetId);
+   if(execute&&!target){commit();return}
+   if(!execute&&eligible.length)return;
+   state.pendingAbilityChoice=null;
+   const action=clone(checkpoint.action);
+   if(!execute){
+     state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
+       {type:'heroActionComplete',actorId:pending.actorId,action}
+     ]);
+   }else{
+     action.kind='attack';action.value=pending.effect.value;
+     action.range=pending.effect.range;action.multiRemaining=1;action.targetIds=[];
+     action.valid=eligible.map(e=>({q:e.q,r:e.r}));
+     ui.actionMode=clone(action);
+     state.combatQueue=window.EmberwatchCombatQueue.create('hero',
+       window.EmberwatchAbilities.compileHeroQueue(pending.actorId,action,[
+         {type:'attack',value:'action',range:action.range}
+       ],{targetId:target.id}));
+   }
+   runCombatQueue();return
+ }
  if(pending.queueIndex!==q.index-1||q.events[pending.queueIndex]?.type!=='heroAbilityEffect')
    throw Error('Optional ability checkpoint no longer matches combat queue');
  const actor=state.players.find(p=>p.id===pending.actorId&&p.hp>0&&!p.exhausted);
@@ -955,6 +986,15 @@ function runCombatQueue(){
        log(actor.name+' gains '+event.value+' Guard.');
      }
      continue
+   }
+   if(event.type==='heroAttackTargetChoice'){
+     const actor=state.players.find(p=>p.id===event.actorId&&p.hp>0&&!p.exhausted);
+     if(!actor)continue;
+     state.pendingAbilityChoice={actorId:actor.id,effect:clone(event.effect),
+       mandatory:true,queueIndex:state.combatQueue.index-1};
+     state.combatQueue=window.EmberwatchCombatQueue.pause(
+       state.combatQueue,'abilityTarget');
+     commit();return
    }
    if(event.type==='heroAbilityEffect'){
      const actor=state.players.find(p=>p.id===event.actorId&&p.hp>0&&!p.exhausted);
@@ -1480,15 +1520,17 @@ function render(){if(!state)return;if(state.phase==='act'&&state.pendingHeroChoi
 if(state.pendingAbilityChoice&&state.combatQueue?.paused&&
  ['optionalAbility','abilityTarget'].includes(state.combatQueue.pauseReason)){
  const choice=state.pendingAbilityChoice,actor=state.players.find(p=>p.id===choice.actorId);
- const effect=choice.effect,targeted=['heal','condition'].includes(effect.type);
+ const effect=choice.effect,targeted=['heal','condition','attack'].includes(effect.type);
  const candidates=targeted?optionalHeroTargets(choice):[];
  const selected=targeted?candidates.find(p=>p.id===choice.targetId):null;
  const targetLabel=effect.type==='heal'?'friendly':'enemy';
- a.innerHTML=`<div id="optionalAbilityChoice"><h3>${choice.mandatory?'Required target':'Optional ability'} · ${esc(actor?.name||'Hero')}</h3><p>${choice.mandatory?'Choose a target for':'Activate'} ${esc(effect.type)} ${Number(effect.value||0)}${effect.condition?' ('+esc(effect.condition)+')':''}${choice.mandatory?'.':' or skip this optional step?'}</p>${targeted?`<div class="section"><p>Select a ${targetLabel} target (range ${Number(effect.range??1)}):</p><div class="controls">${candidates.map(p=>`<button class="small" data-optional-target="${esc(p.id)}">${esc(p.name)} · ${p.hp}/${p.maxHp} HP</button>`).join('')}</div></div>`:''}<div class="controls"><button id="executeAbility" class="primary" ${targeted&&!selected?'disabled':''}>Activate ability</button>${choice.mandatory?'':'<button id="skipAbility">Skip ability</button>'}</div></div>`;
+ a.innerHTML=`<div id="optionalAbilityChoice"><h3>${choice.mandatory?'Required target':'Optional ability'} · ${esc(actor?.name||'Hero')}</h3><p>${choice.mandatory?'Choose a target for':'Activate'} ${esc(effect.type)} ${Number(effect.value||0)}${effect.condition?' ('+esc(effect.condition)+')':''}${choice.mandatory?'.':' or skip this optional step?'}</p>${targeted?`<div class="section"><p>Select a ${targetLabel} target (range ${Number(effect.range??1)}):</p><div class="controls">${candidates.map(p=>`<button class="small" data-optional-target="${esc(p.id)}">${esc(p.name)} · ${p.hp}/${p.maxHp} HP</button>`).join('')}</div></div>`:''}<div class="controls"><button id="executeAbility" class="primary" ${targeted&&!selected?'disabled':''}>Activate ability</button>${choice.mandatory?(effect.type==='attack'&&!candidates.length?
+ '<button id="skipAbility">Finish without attack</button>':''):
+ '<button id="skipAbility">Skip ability</button>'}</div></div>`;
  a.querySelectorAll('[data-optional-target]').forEach(b=>
    b.onclick=()=>chooseOptionalHeroTarget(b.dataset.optionalTarget));
  $('executeAbility').onclick=()=>resolveOptionalHeroEffect(true);
- if(!choice.mandatory)$('skipAbility').onclick=()=>resolveOptionalHeroEffect(false);
+ if($('skipAbility'))$('skipAbility').onclick=()=>resolveOptionalHeroEffect(false);
  return
 }let c=current();if(c?.type!=='player'){a.innerHTML='<h3>Enemies acting…</h3>';return}let p=state.players[c.id];if(!myTurn()){a.innerHTML=`<h3>Waiting for ${p.name}</h3><p>Initiative ${c.initiative}</p>`;return}let cards=p.picked.map(idx=>CARD_LIBRARY[c.id][idx]);a.innerHTML=`<h3>${p.name}'s turn · Initiative ${c.initiative}</h3><p class="help">Each of your two actions can be used once. Resolve them in either order. Guard reduces the next incoming hit.</p><div class="cards">${cards.map((cd,i)=>`<div class="ability"><strong>${esc(cd.n)} ⚡${cd.i}</strong><span class="ability-text">${i===0?'▲ '+describe(cd.t):'▼ '+describe(cd.b)}${isLostAction(c.id,p.picked[i],i===0?'top':'bottom')?' · 🔥 LOST ON USE':''}${cd.condition?' · '+cd.condition:''}${cd.infuse?' · infuse '+cd.infuse:''}${cd.consume?' · consume '+cd.consume+' (+1)':''}</span><div class="controls"><button class="small" data-do="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')||ui.actionMode?'disabled':''}>Use</button><button class="small" data-basic="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')||ui.actionMode?'disabled':''}>Basic</button><button class="small" data-skip="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')?'disabled':''}>Skip</button></div></div>`).join('')}</div>${state.campaign.heroes[c.id].gear.includes('buckler')?`<div class="section"><button id="useBuckler" ${p.spentItems.includes('buckler')?'disabled':''}>${p.spentItems.includes('buckler')?'Steel Buckler spent':'Spend Steel Buckler (Guard +2)'}</button></div>`:''}${ui.actionMode?`<p class="status">${ui.actionMode.kind==='forced'?'Select a highlighted destination to '+ui.actionMode.forcedType+' the enemy':ui.actionMode.kind==='area'?'Choose a highlighted anchor for the area pattern':'Select a highlighted hex for '+ui.actionMode.kind+' '+ui.actionMode.value}. ${ui.actionMode.valid.length?'':'No eligible hexes. Skip this action.'}</p><button id="cancelTarget">Cancel / skip target</button>${ui.actionMode.targetIds?.length?'<button id="finishMulti">Finish targeting</button>':''}`:''}<div class="section"><button id="endTurn" class="primary">End turn</button></div>`;a.querySelectorAll('[data-do]').forEach(b=>b.onclick=()=>offerAction(b.dataset.do));a.querySelectorAll('[data-basic]').forEach(b=>b.onclick=()=>offerAction(b.dataset.basic,true));a.querySelectorAll('[data-skip]').forEach(b=>b.onclick=()=>skipAction(b.dataset.skip));if($('cancelTarget'))$('cancelTarget').onclick=()=>{const action=ui.actionMode;if(action?.kind==='forced'&&state.pendingHeroChoice&&state.combatQueue?.paused){state.pendingHeroChoice=null;resumeCombatQueue();return}if(action?.kind==='forced'){const actor=currentPlayer(),target=state.enemies.find(e=>e.id===action.forcedTargetId);if(actor&&target){afterLinkedAttack(actor,target,action);return}if(actor){finishAttackTarget(actor,{id:action.forcedTargetId},action);return}}ui.actions.push(action.which);state.pendingTargeting=null;ui.actionMode=null;commit()};if($('finishMulti'))$('finishMulti').onclick=finishAction;if($('useBuckler'))$('useBuckler').onclick=useBuckler;$('endTurn').onclick=endTurn}
 function describe(a){return ['move','jump','fly'].includes(a[0])?(a[0]==='jump'?'Jump ':a[0]==='fly'?'Fly ':'Move ')+a[1]:a[0]==='guard'?'Guard '+a[1]:a[0]==='heal'?'Heal '+a[1]+' · range '+a[2]:'Attack '+a[1]+' · range '+a[2]}
