@@ -258,3 +258,21 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:-1}],{targetId:'e0'}),/Invalid Attack/);
 console.log('F2 hero attack compiler and legacy continuation compatibility assertions passed');
+
+
+const deferredMixed=abilities.compileHeroQueue('p1',{
+ kind:'guard',value:2,which:'bottom',cardIndex:5,asBasic:false
+},[
+ {type:'guard',value:'action'},
+ {type:'heal',value:1,range:2}
+],{deferTargets:true});
+assert.deepEqual(deferredMixed.map(e=>e.type),
+ ['heroGuard','heroAbilityEffect','heroActionComplete']);
+assert.equal(deferredMixed[1].needsTarget,true);
+assert.equal(deferredMixed[1].effect.optional,undefined);
+assert.deepEqual(JSON.parse(JSON.stringify(deferredMixed)),deferredMixed);
+assert.throws(()=>abilities.compileHeroQueue('p1',{
+ kind:'guard',value:2
+},[{type:'guard',value:2},{type:'heal',value:1,range:2}]),
+ /Mandatory targeted effects require selected target/);
+console.log('F2 deferred mandatory target compiler assertions passed');
