@@ -1474,7 +1474,7 @@ test('monster entering a mandatory trap mid-path dies and cannot make its queued
  await openCleanGame(page);
  await page.evaluate(()=>{
   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
-  s.phase='act';s.round=2;s.scenario={kind:'classic',level:3};
+  s.phase='act';s.round=2;s.scenario={kind:'vault',revealed:[0,1,2],level:3,seal:false,exitReached:false};
   s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20}];
   s.turnIndex=0;s.players[0].picked=[0,1];s.players[0].q=4;s.players[0].r=3;
   for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
