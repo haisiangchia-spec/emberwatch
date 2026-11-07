@@ -52,6 +52,35 @@
    }
    target.q=previous.q;target.r=previous.r;
  }
+ // Deterministic hex templates expressed as axial offsets around an odd-row anchor.
+ function areaHexes(anchor,shape){
+   if(!anchor||!Number.isInteger(anchor.q)||!Number.isInteger(anchor.r))throw Error('Invalid area anchor');
+   if(!Array.isArray(shape)||!shape.length)throw Error('Missing area shape');
+   const origin=anchor.q-(anchor.r-(anchor.r&1))/2;
+   return shape.map(offset=>{
+     if(!Number.isInteger(offset.q)||!Number.isInteger(offset.r))throw Error('Invalid area offset');
+     const r=anchor.r+offset.r;
+     return {q:origin+offset.q+(r-(r&1))/2,r};
+   });
+ }
+ // A JSON-serializable instruction cursor. Pauses before any ability whose
+ // explicit target/path selection has not yet been supplied.
+ function beginSequence(state,actorId,steps){
+   validate(state,actorId,steps);
+   return {state:copy(state),cursor:{actorId,steps:copy(steps),index:0,events:[]},done:false};
+ }
+ function resumeSequence(snapshot,choice,opts={}){
+   if(!snapshot?.cursor||!Number.isInteger(snapshot.cursor.index))throw Error('Invalid sequence snapshot');
+   const data=copy(snapshot.cursor),now=copy(snapshot.state);
+   if(data.index>=data.steps.length)return {state:now,cursor:null,done:true,events:data.events||[]};
+   const step=data.steps[data.index];
+   const requiresChoice=['attack','areaAttack','heal','condition','push','pull','move'].includes(step.type);
+   if(requiresChoice&&choice===undefined)return {state:now,cursor:data,done:false,awaiting:{step:data.index,type:step.type}};
+   const outcome=apply(now,data.actorId,[step],[choice||{}],opts);
+   data.events.push(...outcome.events.map(event=>({...event,stepIndex:data.index})));
+   data.index++;
+   return {state:outcome.state,cursor:data.index<data.steps.length?data:null,done:data.index>=data.steps.length,events:copy(data.events)};
+ }
  function apply(state,actorId,steps,choices=[],opts={}){
    validate(state,actorId,steps);
    const next=copy(state),events=[];
@@ -89,12 +118,7 @@
        if(!choice.anchor||!Number.isInteger(choice.anchor.q)||!Number.isInteger(choice.anchor.r))throw Error('Area attack requires a hex anchor');
        if(!Array.isArray(step.area)||!step.area.length)throw Error('Area attack requires shape offsets');
        if(step.range!==undefined&&distance(actor,choice.anchor)>step.range)throw Error('Area anchor beyond range');
-       const center={q:choice.anchor.q-(choice.anchor.r-(choice.anchor.r&1))/2,r:choice.anchor.r};
-       const hexes=step.area.map(offset=>{
-         if(!Number.isInteger(offset.q)||!Number.isInteger(offset.r))throw Error('Invalid area offset');
-         const axialQ=center.q+offset.q,r=center.r+offset.r;
-         return key({q:axialQ+(r-(r&1))/2,r});
-       });
+       const hexes=areaHexes(choice.anchor,step.area).map(key);
        ids=validTargets(next,actor,{type:'attack',lineOfSight:step.lineOfSight}).filter(id=>hexes.includes(key(next.units[id])));
      }
      if(!Array.isArray(ids)||new Set(ids).size!==ids.length)throw Error('Target list must be unique');
@@ -159,5 +183,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,clearEffects});
+ return Object.freeze({apply,validTargets,neighbors,distance,areaHexes,beginSequence,resumeSequence,clearEffects});
 });
