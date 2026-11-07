@@ -184,11 +184,17 @@ test('long rest commits initiative 99, heals, and loses chosen discard card', as
     await cards.nth(1).click();
     await page.locator('#ready').click();
   }
+  const revealed=await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).order);
+  expect(revealed.some(x=>x.type==='player'&&x.id===0&&x.initiative===99)).toBe(true);
+  // Long rest resolves at initiative 99, after the earlier hero turns.
+  for(let turn=0;turn<3;turn++) {
+    const end=page.locator('#endTurn');
+    if(await end.isVisible()) await end.click();
+  }
   const result=await page.evaluate(() => {
     const s=JSON.parse(localStorage.getItem('emberwatch_save_v1'));
     return {p:s.players[0],order:s.order,round:s.round};
   });
-  expect(result.order.some(x=>x.type==='player'&&x.id===0&&x.initiative===99)).toBe(true);
   expect(result.p.lost).toContain(5);
   expect(result.p.hand).toContain(4);
   expect(result.p.discard).not.toContain(4);
