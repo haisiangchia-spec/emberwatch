@@ -217,7 +217,16 @@ assert.equal(sequenceEvents[4].action.cardIndex,2);
 assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
  {type:'teleport',value:1}]),/Unsupported hero instruction/);
 assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
- {type:'heal',value:2,range:2}]),/Mandatory targeted effects/);
+ {type:'heal',value:2,range:2}]),/selected target/);
+const selectedHeal=abilities.compileHeroQueue('p3',
+ {kind:'heal',value:4,which:'top',cardIndex:1,asBasic:false},[
+ {type:'heal',value:'action',range:3}
+],{targetId:'p2'});
+assert.deepEqual(selectedHeal.map(e=>e.type),['heroAbilityEffect','heroActionComplete']);
+assert.equal(selectedHeal[0].targetId,'p2');
+assert.equal(selectedHeal[0].effect.value,4);
+assert.equal(selectedHeal[0].effect.range,3);
+assert.deepEqual(JSON.parse(JSON.stringify(selectedHeal)),selectedHeal);
 assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
  {type:'guard',value:'missing'}]),/Invalid Guard/);
 assert.throws(()=>abilities.compileHeroQueue('p3',sequenceAction,[
