@@ -188,14 +188,24 @@
    // execute only once the final target and its retaliation have resolved.
    if(steps.some(step=>step?.type==='attack')){
      const attackIndex=steps.findIndex(step=>step?.type==='attack');
-     if(steps.slice(attackIndex+1).some(step=>step?.type==='attack')||
-        steps.slice(0,attackIndex).some(step=>
+     if(steps.slice(0,attackIndex).some(step=>
           !['shield','retaliate','infuse'].includes(step?.type)||step.optional))
-       throw Error('Only one attack is supported after mandatory self effects');
-     const suffix=steps.slice(attackIndex+1).map(instruction=>{
+       throw Error('Attack must follow mandatory self effects');
+     const later=steps.slice(attackIndex+1);
+     const suffixAttacks=later.filter(step=>step?.type==='attack');
+     if(suffixAttacks.length>2||later.some((step,i)=>step?.type==='attack'&&
+       later.slice(0,i).some(previous=>previous?.type!=='attack')))
+       throw Error('Repeated attacks must be consecutive (up to three attacks)');
+     const suffix=later.map(instruction=>{
        const effect=copy(instruction);
-       if(!['shield','retaliate','infuse','heal','condition'].includes(effect.type))
+       if(!['attack','shield','retaliate','infuse','heal','condition'].includes(effect.type))
          throw Error('Unsupported post-attack effect: '+effect.type);
+       if(effect.type==='attack'){
+         if(effect.optional||!Number.isFinite(effect.value)||effect.value<0||
+            !Number.isInteger(effect.range)||effect.range<1)
+           throw Error('Invalid repeated Attack instruction');
+         return effect;
+       }
        if(['heal','condition'].includes(effect.type)&&!effect.optional&&!deferTargets)
          throw Error('Post-attack mandatory targets require deferred targeting');
        if(effect.value==='action')effect.value=action.value;
