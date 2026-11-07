@@ -2105,7 +2105,13 @@ test('monster movement resumes from a saved hex checkpoint without replaying ter
  expect([st.enemies[0].q,st.enemies[0].r]).toEqual([4,3]);
  expect(st.traps).toEqual([]);
  expect(st.modifiers.monsters.discard).toHaveLength(1);
- expect(st.combatQueue).toBeNull();
+ expect(st.combatQueue.paused).toBe(true);
+ expect(st.combatQueue.pauseReason).toBe('damage');
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const done=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(done.combatQueue).toBeNull();
+ expect(done.modifiers.monsters.discard).toHaveLength(1);
  expect(errors).toEqual([]);
 });
 
@@ -2145,6 +2151,12 @@ test('monster hex checkpoint reroutes around newly blocked step with unspent bud
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect([st.enemies[0].q,st.enemies[0].r]).not.toEqual([3,3]);
  expect(st.journal.some(x=>x.includes('reroutes toward its original focus'))).toBe(true);
- expect(st.combatQueue).toBeNull();
+ expect(st.combatQueue.paused).toBe(true);
+ expect(st.combatQueue.pauseReason).toBe('damage');
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const done=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(done.combatQueue).toBeNull();
+ expect(done.modifiers.monsters.discard).toHaveLength(1);
  expect(errors).toEqual([]);
 });
