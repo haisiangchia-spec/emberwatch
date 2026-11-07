@@ -219,8 +219,10 @@ function finishAttackTarget(actor,target,action){
    action.multiRemaining--;
    action.targetIds.push(target.id);
    action.kind='attack';
-   action.valid=targets(actor,action.range,'attack')
-     .filter(x=>(!action.areaTargets||action.areaTargets.includes(x.id))&&!action.targetIds.includes(x.id))
+   const remaining=action.areaTargets?
+     state.enemies.filter(e=>e.hp>0&&action.areaTargets.includes(e.id)&&lineOfSight(actor,e)):
+     targets(actor,action.range,'attack');
+   action.valid=remaining.filter(x=>!action.targetIds.includes(x.id))
      .map(x=>({q:x.q,r:x.r}));
    if(action.valid.length){ui.actionMode=action;render();return}
  }
