@@ -127,3 +127,6 @@ const retaliationOrigin={q:1,r:1,hp:10,active:[{type:'retaliate',value:2,range:1
 assert.equal(abilities.retaliation(retaliationOrigin,{q:2,r:1,hp:6}),3);
 assert.equal(abilities.retaliation(retaliationOrigin,{q:3,r:1,hp:6}),0);
 assert.equal(abilities.retaliation({...retaliationOrigin,hp:0},{q:2,r:1,hp:6}),0);
+
+assert.equal(calculate({power:0,poison:true,miss:true}).damage,0,'null hit overrides poison');
+assert.equal(calculate({power:6,poison:true,shield:2,miss:true}).damage,0);
