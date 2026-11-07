@@ -133,10 +133,45 @@
  // Translate licensed/original structured card instructions into the stable
  // live hero combat queue. No display-string parsing or implied abilities.
  // Unsupported steps fail at compilation, before changing game state.
- function compileHeroQueue(actorId,action,steps,{targetId=null,deferTargets=false}={}){
+ function compileHeroQueue(actorId,action,steps,{targetId=null,deferTargets=false,movePath=null,destination=null}={}){
    if(typeof actorId!=='string'||!actorId||
       !action||typeof action!=='object'||!Array.isArray(steps)||!steps.length)
      throw Error('Invalid hero action sequence');
+   // Geometry and terrain remain owned by the existing live route planner.
+   // The compiler freezes the chosen hex route into independent queue events.
+   // Optional defensive effects can follow a completed Move, but not precede
+   // it or interrupt per-hex terrain processing.
+   if(steps.some(step=>step?.type==='move')){
+     if(steps[0]?.type!=='move'||steps.slice(1).some(step=>
+       !['shield','retaliate','infuse','heal','condition'].includes(step?.type)))
+       throw Error('Move must precede supported post-move effects');
+     const first=steps[0];
+     if(first.optional||first.value!=='action'&&
+         (!Number.isFinite(first.value)||first.value<0))
+       throw Error('Invalid Move instruction');
+     if(action.kind!=='move')throw Error('Move action kind required');
+     if(!Array.isArray(movePath)||!movePath.length||
+        !destination||!Number.isInteger(destination.q)||!Number.isInteger(destination.r))
+       throw Error('Move requires planned route and destination');
+     const mode=first.movementMode||action.movementMode||'walk';
+     if(!['walk','jump','fly'].includes(mode))throw Error('Invalid movement mode');
+     if(!movePath.every(point=>point&&Number.isInteger(point.q)&&Number.isInteger(point.r))||
+        movePath.at(-1).q!==destination.q||movePath.at(-1).r!==destination.r)
+       throw Error('Move route must end at destination');
+     const tail=steps.slice(1);
+     // Compile the suffix before producing any movement events; this also
+     // checks mandatory target requirements and unsupported effect values.
+     const suffix=tail.length?compileHeroQueue(actorId,action,tail,
+       {targetId,deferTargets}):
+       [{type:'heroActionComplete',actorId,action:copy(action)}];
+     return [
+       ...movePath.map((point,i)=>({
+         type:'heroMoveStep',actorId,hex:copy(point),movementMode:mode,
+         destination:copy(destination),finalStep:i===movePath.length-1
+       })),
+       ...suffix
+     ];
+   }
    const allowed=new Set(['guard','shield','retaliate','infuse','heal','condition','attack']);
    // Keep the existing attack continuation authoritative while compiling
    // declarative instructions before and after the hit. Post-hit instructions
