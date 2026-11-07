@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwatch v0.11.6 — Reactive Monster Routes</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwatch v0.11.7 — Interrupted Hero Route Recovery</title><style>
 :root{color-scheme:dark;--bg:#101a22;--panel:#1d2b34;--panel2:#263a44;--gold:#f0bd69;--text:#f5f0e8;--muted:#a6bac2;--line:#47606b;--blue:#7fc7da}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#29424b,#101a22 65%);font:14px/1.4 system-ui,Segoe UI,sans-serif;color:var(--text)}button,input,select,textarea{font:inherit}button{background:#375363;color:white;border:1px solid #63808a;padding:9px 12px;border-radius:6px;cursor:pointer}button:hover:not(:disabled){background:#4d7180}button:disabled{opacity:.35;cursor:not-allowed}button.primary{background:#936635;border-color:var(--gold)}button.active{outline:2px solid var(--gold);background:#875b30}button.small{padding:5px 8px;font-size:12px}input,select,textarea{background:#10242d;border:1px solid #52717f;border-radius:5px;padding:8px;color:#fff}h1,h2,h3{margin:.2em 0 .5em;font-family:Georgia,serif;letter-spacing:.04em}h1{font-size:29px;color:var(--gold)}h2{font-size:18px;color:#ffdaa0}h3{font-size:15px}p{margin:6px 0 12px}.muted,.hint{color:var(--muted)}.wrap{max-width:1540px;margin:auto;padding:16px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px}.layout{display:grid;grid-template-columns:minmax(480px,1fr) 370px;gap:14px;margin-top:14px}.panel{background:rgba(26,42,50,.95);border:1px solid #48616b;border-radius:10px;padding:14px;box-shadow:0 10px 25px #0003}.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mapbox{overflow:auto;min-height:510px;display:flex;justify-content:center;align-items:flex-start;background:radial-gradient(circle at center,#243a41,#14232c);border-radius:8px;border:1px solid #435b62}.mapbox svg{min-width:620px;max-width:100%;height:auto;touch-action:manipulation}svg .tile{stroke:#72858a;stroke-width:1.7;cursor:pointer}svg .tile:hover{stroke:#ffe1a3;stroke-width:3}svg .tile.selected{stroke:var(--gold);stroke-width:4}svg .coord{fill:#c7d6d7;font:10px system-ui;pointer-events:none;opacity:.55}svg .unit{pointer-events:none;stroke:#132127;stroke-width:2.5}svg .unit-label{font:bold 17px system-ui;fill:#0c1b25;pointer-events:none;text-anchor:middle;dominant-baseline:middle}svg .hp{fill:#fff;font:bold 11px system-ui;pointer-events:none;text-anchor:middle}.character{border:1px solid #45616a;border-radius:8px;padding:9px;margin:7px 0;background:#233841}.character.current{border-color:var(--gold)}.charhead{display:flex;justify-content:space-between;gap:8px;align-items:center}.stats{color:#cadce1;font-size:12px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ability{min-height:132px;text-align:left;display:flex;flex-direction:column;gap:5px;background:linear-gradient(145deg,#314e57,#21333d);padding:9px;border:1px solid #6b8588}.ability strong{color:#ffdb97;font-family:Georgia,serif}.ability .ability-text{font-size:12px}.ability .init{float:right;color:#a5ddeb}.ability.selected{border-color:#f8d08d;background:#5b4831}.tag{display:inline-block;background:#394e57;padding:2px 6px;border-radius:4px;font-size:11px}.section{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.turnbar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.log{height:150px;overflow:auto;background:#12252e;padding:10px;border:1px solid #3e5962;border-radius:6px;font-size:12px}.log div{margin-bottom:4px}.modalbg{position:fixed;inset:0;background:#050d12dd;z-index:10;display:flex;justify-content:center;align-items:center;padding:15px}.modal{max-height:92vh;overflow:auto;max-width:770px;width:100%;background:#20343e;border:1px solid #83979a;border-radius:12px;padding:25px}.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}.status{color:#f1c978}.pill{display:inline-block;border:1px solid #52717a;border-radius:18px;padding:4px 9px;margin-right:5px;font-size:12px}.sidebar{min-width:0}.room{font-weight:700;letter-spacing:2px;color:var(--gold)}.help{font-size:12px;color:#aac0c5}.footer{margin-top:12px;color:#91a5ac;font-size:12px}@media(max-width:950px){.layout{grid-template-columns:1fr}.mapbox{min-height:360px}.sidebar{order:2}}@media(max-width:560px){.wrap{padding:9px}.panel{padding:9px}.settings{grid-template-columns:1fr}.modal{padding:14px}.cards{grid-template-columns:1fr 1fr}.ability{padding:6px;min-height:125px;font-size:12px}}
 .reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.reveal{background:#263b44;border:1px solid #59717a;border-radius:7px;padding:9px}.reveal strong{color:#ffdb97}.reveal .init{color:#a5ddeb;float:right}
 </style><script src="engine/abilities.js"></script><script src="engine/combat-queue.js"></script><script src="engine/monster-focus.js"></script><script src="engine/terrain.js"></script><script src="engine/ice.js"></script>
@@ -734,15 +734,40 @@ function runCombatQueue(){
          !contains(state.icy,from.q,from.r)||!!occupied))||
        (!!occupied&&event.finalStep);
      if(invalid){
-       log(actor.name+' stops moving because a planned hex is no longer accessible.');
-       // The consumed event cannot be replayed; discard remaining movement
-       // events but retain the action completion. Do not teleport, reroute or
-       // re-trigger terrain already resolved before the obstruction.
        const q=state.combatQueue;
-       q.events=q.events.slice(0,q.index).concat(q.events.slice(q.index)
-         .filter(e=>e.type!=='heroMoveStep'||e.actorId!==actor.id));
+       const completed=q.events.slice(0,q.index-1).filter(e=>
+         e.type==='heroMoveStep'&&e.actorId===actor.id);
+       const spent=completed.reduce((sum,e)=>sum+(e.paidCost??(
+         e.icyExtra?0:(e.movementMode==='walk'&&difficult(e.hex.q,e.hex.r)?2:1))),0);
+       const tail=q.events.slice(q.index);
+       const moveEvents=tail.filter(e=>e.type==='heroMoveStep'&&e.actorId===actor.id);
+       const endEvent=tail.find(e=>e.type==='heroActionComplete'&&e.actorId===actor.id);
+       const destination=event.destination||moveEvents.at(-1)?.destination||
+         moveEvents.at(-1)?.hex||hex;
+       const remaining=Math.max(0,(endEvent?.action?.value??0)-spent);
+       // A compulsory slide cannot turn into voluntary movement midway.
+       // Retry at most once to prevent cyclic replanning on stale saves.
+       const alternate=!event.icyExtra&&!event.rerouted&&remaining>0&&
+         heroMovementPath(actor,destination,{
+           ...endEvent?.action,movementMode:mode,value:remaining
+         });
+       const keep=tail.filter(e=>e.type!=='heroMoveStep'||e.actorId!==actor.id);
+       if(alternate?.length){
+         const next=alternate.map((point,i)=>({
+           type:'heroMoveStep',actorId:actor.id,hex:point,
+           destination:{q:destination.q,r:destination.r},
+           movementMode:mode,rerouted:true,
+           finalStep:i===alternate.length-1
+         }));
+         q.events.splice(q.index,q.events.length-q.index,...next,...keep);
+         log(actor.name+' reroutes with '+remaining+' movement points remaining.');
+       }else{
+         q.events.splice(q.index,q.events.length-q.index,...keep);
+         log(actor.name+' stops moving because a planned hex is no longer accessible.');
+       }
        continue
      }
+     event.paidCost=event.icyExtra?0:(mode==='walk'&&difficult(hex.q,hex.r)?2:1);
      actor.q=hex.q;actor.r=hex.r;
      log(actor.name+' moves to '+hex.q+','+hex.r+'.');
      let finalStep=event.finalStep;
@@ -768,6 +793,7 @@ function runCombatQueue(){
          const extras=slide.map((extra,i)=>({
            type:'heroMoveStep',actorId:actor.id,hex:extra,
            movementMode:event.movementMode,icyExtra:true,
+           destination:event.destination,paidCost:0,
            finalStep:i===slide.length-1&&!accepted.length
          }));
          queue.events.splice(queue.index,queue.events.length-queue.index,
@@ -1218,6 +1244,7 @@ function resolveHeroBoardAction(action,hex,targetId=null){
    state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
      ...path.map((point,i)=>({type:'heroMoveStep',actorId:p.id,
        hex:point,movementMode:action.movementMode||'walk',
+       destination:{q:hex.q,r:hex.r},
        finalStep:i===path.length-1})),
      {type:'heroActionComplete',actorId:p.id,action:clone(action)}
    ]);
