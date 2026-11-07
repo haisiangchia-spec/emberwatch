@@ -240,6 +240,21 @@ Implemented:
 
 ---
 
+## Hero stepwise terrain movement — v0.11.1
+
+Implemented and browser-tested:
+- Hero Move, Jump and Fly actions now calculate a legal route at the moment the player selects the destination, then save an individual `heroMoveStep` queue event for each traversed hex. The existing movement costs and reachability modes are respected; equally short routes are randomly resolved as previously agreed.
+- Entered hexes are resolved **sequentially**. A trap or hazardous hex can pause the movement queue for the normal damage-prevention decision: take damage, lose one eligible card from hand, or lose two eligible cards from discard. The terrain effect and queue cursor are persisted before prompting.
+- After resolving damage, including after a browser reload, movement continues **from the next unprocessed hex**, without rerolling the route or re-triggering a consumed trap. Multiple damaging hexes produce separate prompts, and hazardous hexes persist.
+- If terrain damage exhausts the hero, subsequent queued movement is skipped and the initiative turn advances without applying the rest of the movement action. If the hero survives, loot collection on the selected destination, door opening, and objective checks proceed.
+- Jump skips dangerous terrain along intermediate route hexes but applies terrain effects on the landing hex; flying ignores dangerous terrain on intermediate and final hexes. Jump no longer opens doors while airborne.
+- Browser coverage tests an intermediate trap with a saved/reloaded damage prompt, prevention by losing a hand card, multiple hazardous hexes separated by reloads, lethal trap interruption, Jump landing, and Flying immunity.
+- Latest code-bearing GitHub Actions run [42380793715](https://github.com/haisiangchia-spec/emberwatch/actions/runs/42380793715) passed **62 Chromium tests** with unit checks green.
+
+**Outstanding qualifications:** Route choice is computed automatically from current prototype pathfinding, rather than exposing full Frosthaven player-directed hex-by-hex route selection. Special movement effects, partial-move cancellation, movement-point choice/stop, scenario terrain scripts, ongoing condition effects and exact Flying/Jump exceptions still need coverage. Multiplayer synchronization remains nontransactional; this improvement guarantees serialization for the saved local state, not race-free concurrent network play. The normal game still does not place traps in its default scenario.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
