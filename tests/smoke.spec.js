@@ -391,3 +391,59 @@ test('structured Warden Retaliate activates in battle and hurts adjacent attacke
  st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect(st.enemies[0].hp).toBe(5);
 });
+
+test('Iron Sweep can push a surviving enemy one legal hex', async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.players[1].q=2;s.players[1].r=5;
+  s.enemies=[{id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('forced');
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,4]);
+});
+
+test('Mark Quarry can pull a surviving enemy closer', async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:1,initiative:23}];s.turnIndex=0;
+  s.players[1].picked=[1,0];s.enemies=[{id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
+ await expect(page.locator('#actionUI')).toContainText('forced');
+ await page.locator('#board polygon[data-q="1"][data-r="3"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([1,3]);
+});
+
+test('Static Bloom can attack two different enemy targets', async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:2,initiative:43}];s.turnIndex=0;
+  s.players[2].picked=[5,0];
+  s.enemies=[
+   {id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{}},
+   {id:'e1',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
+  ];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('attack');
+ await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.every(e=>e.hp<99)).toBe(true);
+});
