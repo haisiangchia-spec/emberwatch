@@ -782,3 +782,27 @@ test('scripted monster Shield and infusion resolve once around an interrupted at
  expect(st.journal.filter(line=>line.includes('FIRE infused'))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('queued hero healing restores HP and infuses its element once',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:3,initiative:63}];s.turnIndex=0;
+  s.players[3].picked=[1,0];s.players[0].hp=8;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="0"][data-r="4"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(11);
+ expect(st.elements.light).toBe(2);
+ expect(st.combatQueue).toBeNull();
+ expect(st.journal.filter(x=>x.includes('LIGHT infused'))).toHaveLength(1);
+ await page.reload();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(11);
+ expect(st.journal.filter(x=>x.includes('LIGHT infused'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
