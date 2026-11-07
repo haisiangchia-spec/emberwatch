@@ -727,7 +727,8 @@ function runCombatQueue(){
          log(actor.name+' collects a coin.')
        }
      }
-     if(actor.hp>0&&!actor.exhausted){
+     if(actor.hp>0&&!actor.exhausted&&
+       (event.movementMode!=='jump'||event.finalStep)){
        revealDoor(hex.q,hex.r);scenarioProgress(actor)
      }
      continue
@@ -1010,7 +1011,9 @@ function heroMovementPath(actor,destination,action){
    pending.sort((a,b)=>a.d-b.d||a.r-b.r||a.q-b.q);
    const here=pending.shift(),key=tileKey(here.q,here.r);
    if(here.d!==distances.get(key))continue;
-   for(const next of neighbors(here.q,here.r)){
+   // Random neighbor iteration resolves equally short hero paths once,
+   // without later rewriting a route that has already been expanded.
+   for(const next of window.EmberwatchMonsterFocus.shuffle(neighbors(here.q,here.r))){
      if(!discovered(next.q,next.r))continue;
      const occupant=unitAt(next.q,next.r),isWall=wall(next.q,next.r),isRock=rock(next.q,next.r);
      if(mode==='walk'&&(isWall||isRock||state.enemies.some(e=>e.hp>0&&e.q===next.q&&e.r===next.r)))continue;
@@ -1021,9 +1024,6 @@ function heroMovementPath(actor,destination,action){
      if(nd<before){
        distances.set(nkey,nd);routes.set(nkey,[...routes.get(key),{q:next.q,r:next.r}]);
        pending.push({...next,d:nd});
-     }else if(nd===before&&window.EmberwatchMonsterFocus.pick([false,true])){
-       // Emberwatch's automatic random tie policy extends to equal paths.
-       routes.set(nkey,[...routes.get(key),{q:next.q,r:next.r}]);
      }
    }
  }
