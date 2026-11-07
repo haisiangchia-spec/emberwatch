@@ -580,3 +580,77 @@ test('monster and hero modifier rolls use Strengthen and Muddle selection consis
  expect(rolls.muddled).toBe(1);
  expect(rolls.neutral).toBe(1);
 });
+
+test('two monster attacks suspend and resume through the queue without duplicate draws', async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[
+   {id:'ash-one',name:'Ash Raider',hp:8,maxHp:8,q:2,r:4,conditions:{}},
+   {id:'ash-two',name:'Ash Raider',hp:8,maxHp:8,q:2,r:5,conditions:{}}
+  ];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{name:'Testing Strike',initiative:20,move:-2,attack:0,range:0,shuffle:false}};
+  s.modifiers.monsters.draw=[0,0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.combatQueue.owner).toBe('monster');
+ expect(saved.combatQueue.index).toBe(1);
+ expect(saved.combatQueue.paused).toBe(true);
+ const firstDraws=saved.modifiers.monsters.discard.length;
+ await page.reload();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.combatQueue.index).toBe(1);
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.combatQueue.index).toBe(2);
+ expect(saved.modifiers.monsters.discard.length).toBe(firstDraws+1);
+ await page.locator('#takeDamage').click();
+ saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.combatQueue).toBeNull();
+ expect(saved.pendingDamage).toBeNull();
+ expect(saved.turnIndex).toBe(2);
+ expect(saved.journal.filter(line=>line.includes('attacks '))).toHaveLength(2);
+ expect(errors).toEqual([]);
+});
+
+test('hero retaliation interruption resumes selected action after page reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];s.enemies=[{
+   id:'retal-monster',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{},
+   active:[{type:'retaliate',value:2,range:1,duration:'round'}]
+  }];
+  s.modifiers.heroes[0].draw=[0,0];s.modifiers.heroes[0].discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.combatQueue.owner).toBe('hero');
+ expect(saved.combatQueue.paused).toBe(true);
+ const hp=saved.enemies[0].hp;
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(saved.enemies[0].hp).toBe(hp);
+ expect(saved.combatQueue).toBeNull();
+ expect(saved.pendingDamage).toBeNull();
+ await expect(page.locator('#endTurn')).toBeVisible();
+ expect(errors).toEqual([]);
+});
