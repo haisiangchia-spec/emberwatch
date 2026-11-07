@@ -447,3 +447,70 @@ test('Static Bloom can attack two different enemy targets', async ({page})=>{
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect(st.enemies.every(e=>e.hp<99)).toBe(true);
 });
+
+test('linked push happens before retaliation range check',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.enemies=[{
+   id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{},
+   active:[{type:'retaliate',value:4,range:1,duration:'round'}]
+  }];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,4]);
+ expect(st.players[0].hp).toBe(st.players[0].maxHp);
+ expect(st.pendingDamage).toBeNull();
+});
+
+test('a surviving adjacent enemy retaliates after hero attack and the damage can be avoided',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];s.enemies=[{
+   id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{},
+   active:[{type:'retaliate',value:3,range:1,duration:'round'}]
+  }];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toContainText('retaliation');
+ const hp=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0].hp);
+ await page.locator('#damageChoice input[data-pool="hand"][value="2"]').check();
+ await page.locator('#loseHand').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(hp);
+ expect(st.players[0].lost).toContain(2);
+ expect(st.pendingAttack).toBeNull();
+ expect(st.pendingDamage).toBeNull();
+ await expect(page.locator('#damageChoice')).toHaveCount(0);
+});
+
+test('lethal attack does not trigger defender retaliation',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];s.enemies=[{
+   id:'e0',name:'Ash Raider',hp:1,maxHp:1,q:1,r:4,conditions:{},
+   active:[{type:'retaliate',value:9,range:1,duration:'round'}]
+  }];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(st.players[0].maxHp);
+ expect(st.pendingDamage).toBeNull();
+});
