@@ -1,3 +1,11 @@
+## Automated CI results available to the GitHub connector
+
+The existing `.github/workflows/browser-tests.yml` still runs `npm run test:unit` and `npm run test:smoke` on every push to `main`. A final step now publishes `latest.json` on the separate `ci-results` branch, including the tested commit SHA, run URL, unit/browser outcomes and combined result. This branch is not watched by the main workflow, so writing the report cannot recursively trigger a test run.
+
+To inspect the latest recorded outcome, read `latest.json` from the `ci-results` branch. Compare `sourceSha` with the current main-branch HEAD: a different SHA means the report is stale. If no results branch exists yet, check the GitHub Actions job for errors in the reporting step. The workflow intentionally does not publish results from pull requests or forks.
+
+---
+
 # Emberwatch v0.11.6 — Reactive Monster Routes
 
 Queued monster movement now checks its saved route against current hex occupancy, obstacles and icy slides before executing the move. If the route is stale, it searches again for a legal route toward the **already committed focus**, preferentially retaining the committed destination where possible. Equal-priority alternative attack hexes use the project's randomized tie policy. The new route replaces only the pending movement plan; completed queue effects and modifier draws are not replayed.
