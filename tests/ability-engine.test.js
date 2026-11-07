@@ -45,4 +45,11 @@ result=apply(s,'hero',[{type:'infuse',element:'fire'},{type:'condition',conditio
 assert.equal(result.state.elements.fire,2);
 assert.equal(result.state.units.e1.conditions.wound,true);
 assert.throws(()=>apply(s,'hero',[{type:'attack',value:1,after:[{type:'push',value:1}]}],[{targets:['e1']}]),/pending-hit/);
+// An area pattern is expressed as axial offsets from an odd-row hex anchor.
+const splash=apply(state(),'hero',[{type:'areaAttack',value:2,range:2,area:[{q:0,r:0},{q:-1,r:1}]}],[{anchor:{q:2,r:1}}]);
+assert.equal(splash.state.units.e1.hp,6);
+assert.equal(splash.state.units.e2.hp,6);
+assert.equal(splash.events.filter(e=>e.type==='attack').length,2);
+assert.throws(()=>apply(state(),'hero',[{type:'areaAttack',value:2,range:1,area:[{q:0,r:0}]}],[{anchor:{q:7,r:7}}]),/beyond range/);
+assert.throws(()=>apply(state(),'hero',[{type:'areaAttack',value:2,range:2,area:[]}],[{anchor:{q:2,r:1}}]),/shape/);
 console.log('F2 ability interpreter conformance assertions passed');
