@@ -1,7 +1,7 @@
 {
   "name": "emberwatch-browser-tests",
   "private": true,
-  "version": "0.13.4",
+  "version": "0.13.5",
   "description": "Playwright browser regression tests for Emberwatch",
   "scripts": {
     "test": "playwright test",
