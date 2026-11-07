@@ -1843,3 +1843,39 @@ test('ice-aware focus prefers farther hero reachable with fewer paid movement po
  expect(st.journal.filter(x=>x.includes(' slides to '))).toHaveLength(2);
  expect(errors).toEqual([]);
 });
+
+test('monster focus counts negative terrain crossed during free icy slide',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.scenario={kind:'vault',revealed:[0,1,2],level:1,seal:false,exitReached:false};
+  s.order=[{type:'player',id:0,initiative:10},{type:'player',id:1,initiative:11},
+    {type:'enemy',id:'Ash Raider',initiative:20}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.players[0].q=5;s.players[0].r=3;
+  s.players[1].q=1;s.players[1].r=0;
+  for(let i=2;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'hazard-focus',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  const open=new Set(['1,3','2,3','3,3','4,3','5,3','1,2','1,1','1,0']);
+  s.walls=[];for(let q=0;q<8;q++)for(let r=0;r<6;r++)
+    if(!open.has(q+','+r))s.walls.push([q,r]);
+  s.rocks=[];s.difficult=[];s.traps=[[3,3]];s.hazardous=[];s.icy=[[2,3],[3,3]];
+  s.monsterReveals={'Ash Raider':{name:'Hazard-Aware Ice Focus',initiative:20,abilities:[
+    {type:'move',value:1},{type:'attack',value:2,range:1}
+  ]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await page.locator('#endTurn').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.journal.some(line=>line.includes(' focuses '+st.players[1].name))).toBe(true);
+ expect(st.journal.some(line=>line.includes(' focuses '+st.players[0].name))).toBe(false);
+ expect(st.traps).toEqual([[3,3]]);
+ expect(st.enemies[0].hp).toBe(8);
+ expect(st.modifiers.monsters.discard).toHaveLength(0);
+ expect(errors).toEqual([]);
+});
