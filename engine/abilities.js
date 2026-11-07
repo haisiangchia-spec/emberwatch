@@ -137,7 +137,30 @@
    if(typeof actorId!=='string'||!actorId||
       !action||typeof action!=='object'||!Array.isArray(steps)||!steps.length)
      throw Error('Invalid hero action sequence');
-   const allowed=new Set(['guard','shield','retaliate','infuse','heal','condition']);
+   const allowed=new Set(['guard','shield','retaliate','infuse','heal','condition','attack']);
+   // Attacks own a target-by-target continuation that can pause for Push/Pull,
+   // retaliation or additional targets. Do not put an unconditional action
+   // completion after that continuation or silently ignore other steps.
+   if(steps.some(step=>step?.type==='attack')){
+     if(steps.length!==1||steps[0]?.type!=='attack')
+       throw Error('Attack sequences require a standalone attack instruction');
+     const step=copy(steps[0]);
+     if(step.optional)throw Error('Optional attack selection is not yet supported');
+     if(step.value==='action')step.value=action.value;
+     if(!Number.isFinite(step.value)||step.value<0)
+       throw Error('Invalid Attack value');
+     if(typeof targetId!=='string'||!targetId)
+       throw Error('Attack requires selected target');
+     if(action.kind!=='attack')throw Error('Attack action kind required');
+     const attackAction={...copy(action),value:step.value};
+     const linked=linkedAttackSteps(attackAction);
+     return [
+       {type:'heroAttackHit',actorId,targetId,action:copy(attackAction)},
+       ...linked.map(effect=>({type:'heroAttackLinked',actorId,targetId,
+         step:copy(effect),action:copy(attackAction)})),
+       {type:'heroAttackPostHit',actorId,targetId,action:copy(attackAction)}
+     ];
+   }
    const events=[];
    for(const instruction of steps){
      if(!instruction||!allowed.has(instruction.type))
