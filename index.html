@@ -255,7 +255,7 @@ function resolveRoundEndChoice(choice){
 function redrawShortRest(){
  const p=state.players[state.roundEndIndex],i=state.roundEndIndex,info=state.lastRest;
  if(state.phase!=='roundEnd'||!info||info.hero!==i||info.redrawn||p.hp<=1)return;
- const available=p.hand.filter(x=>x!==info.lost);
+ const available=(info.recovered||[]).filter(x=>p.hand.includes(x));
  if(!available.length)return;
  p.hp--;const replacement=available[Math.floor(Math.random()*available.length)];
  p.hand.splice(p.hand.indexOf(replacement),1);
@@ -271,8 +271,8 @@ function finishRestDecision(){
 function shortRestCharacter(p,heroIndex){
  if(p.discard.length<2)return false;
  const idx=Math.floor(Math.random()*p.discard.length),lost=p.discard.splice(idx,1)[0];
- p.lost.push(lost);p.hand.push(...p.discard);p.discard=[];
- state.lastRest={hero:heroIndex,lost,redrawn:false};
+ const recovered=p.discard.slice();p.lost.push(lost);p.hand.push(...p.discard);p.discard=[];
+ state.lastRest={hero:heroIndex,lost,recovered,redrawn:false};
  log(p.name+' short rests: '+CARD_LIBRARY[heroIndex][lost].n+' is lost.');
  commit();return true
 }
