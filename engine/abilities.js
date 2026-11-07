@@ -142,8 +142,10 @@
    // Optional defensive effects can follow a completed Move, but not precede
    // it or interrupt per-hex terrain processing.
    if(steps.some(step=>step?.type==='move')){
-     if(steps[0]?.type!=='move'||steps.slice(1).some(step=>
-       !['shield','retaliate','infuse','heal','condition'].includes(step?.type)))
+     const afterMove=steps.slice(1);
+     const attackAfterMove=afterMove.length===1&&afterMove[0]?.type==='attack';
+     if(steps[0]?.type!=='move'||(!attackAfterMove&&afterMove.some(step=>
+       !['shield','retaliate','infuse','heal','condition'].includes(step?.type))))
        throw Error('Move must precede supported post-move effects');
      const first=steps[0];
      if(first.optional||first.value!=='action'&&
@@ -158,10 +160,18 @@
      if(!movePath.every(point=>point&&Number.isInteger(point.q)&&Number.isInteger(point.r))||
         movePath.at(-1).q!==destination.q||movePath.at(-1).r!==destination.r)
        throw Error('Move route must end at destination');
-     const tail=steps.slice(1);
-     // Compile the suffix before producing any movement events; this also
-     // checks mandatory target requirements and unsupported effect values.
-     const suffix=tail.length?compileHeroQueue(actorId,action,tail,
+     // An attack after Move cannot select its target until the figure has
+     // reached its destination. Pause on a serialized selection checkpoint
+     // rather than choosing against the actor's old position.
+     let suffix;
+     if(attackAfterMove){
+       const attack=copy(afterMove[0]);
+       if(attack.optional||!Number.isFinite(attack.value)||attack.value<0||
+          !Number.isInteger(attack.range)||attack.range<1)
+         throw Error('Invalid post-move Attack instruction');
+       suffix=[{type:'heroAttackTargetChoice',actorId,
+         effect:attack,action:copy(action)}];
+     }else suffix=afterMove.length?compileHeroQueue(actorId,action,afterMove,
        {targetId,deferTargets}):
        [{type:'heroActionComplete',actorId,action:copy(action)}];
      return [
