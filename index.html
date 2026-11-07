@@ -249,19 +249,8 @@ function finishAttackTarget(actor,target,action){
    // Attack continuations occur only after all linked effects and retaliation.
    // A repeated attack needs a *new* target checkpoint, but must never replay
    // the completed hit or draw its modifier a second time.
-   const [nextStep,...remaining]=action.postAttackSteps;
-   if(nextStep.type==='attack'){
-     const nextAction=clone(action);
-     nextAction.postAttackSteps=clone(remaining);
-     state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
-       {type:'heroAttackTargetChoice',actorId:actor.id,
-         effect:clone(nextStep),action:nextAction}
-     ]);
-     runCombatQueue();return
-   }
    state.combatQueue=window.EmberwatchCombatQueue.create('hero',
-     window.EmberwatchAbilities.compileHeroQueue(actor.id,action,
-       action.postAttackSteps,{deferTargets:true}));
+     window.EmberwatchAbilities.compileAttackContinuation(actor.id,action));
    runCombatQueue();return
  }
  finishAction()
