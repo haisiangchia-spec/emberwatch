@@ -226,7 +226,6 @@ function finishAttackTarget(actor,target,action){
      .map(x=>({q:x.q,r:x.r}));
    if(action.valid.length){ui.actionMode=action;render();return}
  }
- if(action.infuse)infuse(action.infuse);
  finishAction()
 }
 function resumeHeroAttack(){
@@ -298,7 +297,7 @@ function clickHex(q,r){
    if(!target)return;
    resolveHeroBoardAction(a,{q,r},target.id);return
  }
- if(a.infuse)infuse(a.infuse);finishAction()
+ finishAction()
 }
 function selectCard(idx){if(state.phase!=='plan')return;const p=state.players[seat];if(!canPlan(p)||p.ready||!p.hand.includes(idx))return;let sel=ui.selected;if(sel.includes(idx))sel=sel.filter(n=>n!==idx);else if(sel.length<2)sel=[...sel,idx];else sel=[sel[1],idx];ui.selected=sel;ui.initiative=0;ui.topChoice=0;render()}
 
