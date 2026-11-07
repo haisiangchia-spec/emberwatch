@@ -1413,3 +1413,58 @@ test('monster killed by first target retaliation cannot continue multi-target at
  expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('pushing a monster onto a trap applies scenario damage and removes the trap',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0];
+  s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'trapped',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  s.traps=[[2,4]];s.hazardous=[];s.scenario.level=3;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ const before=st.enemies[0].hp;
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(before-5);
+ expect(st.traps).toEqual([]);
+ expect(st.journal.filter(x=>x.includes('triggers trap'))).toHaveLength(1);
+ await page.reload();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.traps).toEqual([]);
+ expect(st.enemies[0].hp).toBe(before-5);
+ expect(errors).toEqual([]);
+});
+
+test('pushing a monster onto hazardous terrain damages without removing terrain',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0];
+  s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'hazard-test',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  s.traps=[];s.hazardous=[[2,4]];s.scenario.level=3;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ const before=st.enemies[0].hp;
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(before-2);
+ expect(st.hazardous).toEqual([[2,4]]);
+ expect(st.journal.filter(x=>x.includes('triggers hazardous'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
