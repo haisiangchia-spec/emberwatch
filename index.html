@@ -1,7 +1,7 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwatch v0.8 — Tactical Card Rules</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwatch v0.8.1 — Card Management</title><style>
 :root{color-scheme:dark;--bg:#101a22;--panel:#1d2b34;--panel2:#263a44;--gold:#f0bd69;--text:#f5f0e8;--muted:#a6bac2;--line:#47606b;--blue:#7fc7da}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#29424b,#101a22 65%);font:14px/1.4 system-ui,Segoe UI,sans-serif;color:var(--text)}button,input,select,textarea{font:inherit}button{background:#375363;color:white;border:1px solid #63808a;padding:9px 12px;border-radius:6px;cursor:pointer}button:hover:not(:disabled){background:#4d7180}button:disabled{opacity:.35;cursor:not-allowed}button.primary{background:#936635;border-color:var(--gold)}button.active{outline:2px solid var(--gold);background:#875b30}button.small{padding:5px 8px;font-size:12px}input,select,textarea{background:#10242d;border:1px solid #52717f;border-radius:5px;padding:8px;color:#fff}h1,h2,h3{margin:.2em 0 .5em;font-family:Georgia,serif;letter-spacing:.04em}h1{font-size:29px;color:var(--gold)}h2{font-size:18px;color:#ffdaa0}h3{font-size:15px}p{margin:6px 0 12px}.muted,.hint{color:var(--muted)}.wrap{max-width:1540px;margin:auto;padding:16px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px}.layout{display:grid;grid-template-columns:minmax(480px,1fr) 370px;gap:14px;margin-top:14px}.panel{background:rgba(26,42,50,.95);border:1px solid #48616b;border-radius:10px;padding:14px;box-shadow:0 10px 25px #0003}.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mapbox{overflow:auto;min-height:510px;display:flex;justify-content:center;align-items:flex-start;background:radial-gradient(circle at center,#243a41,#14232c);border-radius:8px;border:1px solid #435b62}.mapbox svg{min-width:620px;max-width:100%;height:auto;touch-action:manipulation}svg .tile{stroke:#72858a;stroke-width:1.7;cursor:pointer}svg .tile:hover{stroke:#ffe1a3;stroke-width:3}svg .tile.selected{stroke:var(--gold);stroke-width:4}svg .coord{fill:#c7d6d7;font:10px system-ui;pointer-events:none;opacity:.55}svg .unit{pointer-events:none;stroke:#132127;stroke-width:2.5}svg .unit-label{font:bold 17px system-ui;fill:#0c1b25;pointer-events:none;text-anchor:middle;dominant-baseline:middle}svg .hp{fill:#fff;font:bold 11px system-ui;pointer-events:none;text-anchor:middle}.character{border:1px solid #45616a;border-radius:8px;padding:9px;margin:7px 0;background:#233841}.character.current{border-color:var(--gold)}.charhead{display:flex;justify-content:space-between;gap:8px;align-items:center}.stats{color:#cadce1;font-size:12px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ability{min-height:132px;text-align:left;display:flex;flex-direction:column;gap:5px;background:linear-gradient(145deg,#314e57,#21333d);padding:9px;border:1px solid #6b8588}.ability strong{color:#ffdb97;font-family:Georgia,serif}.ability .ability-text{font-size:12px}.ability .init{float:right;color:#a5ddeb}.ability.selected{border-color:#f8d08d;background:#5b4831}.tag{display:inline-block;background:#394e57;padding:2px 6px;border-radius:4px;font-size:11px}.section{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.turnbar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.log{height:150px;overflow:auto;background:#12252e;padding:10px;border:1px solid #3e5962;border-radius:6px;font-size:12px}.log div{margin-bottom:4px}.modalbg{position:fixed;inset:0;background:#050d12dd;z-index:10;display:flex;justify-content:center;align-items:center;padding:15px}.modal{max-height:92vh;overflow:auto;max-width:770px;width:100%;background:#20343e;border:1px solid #83979a;border-radius:12px;padding:25px}.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}.status{color:#f1c978}.pill{display:inline-block;border:1px solid #52717a;border-radius:18px;padding:4px 9px;margin-right:5px;font-size:12px}.sidebar{min-width:0}.room{font-weight:700;letter-spacing:2px;color:var(--gold)}.help{font-size:12px;color:#aac0c5}.footer{margin-top:12px;color:#91a5ac;font-size:12px}@media(max-width:950px){.layout{grid-template-columns:1fr}.mapbox{min-height:360px}.sidebar{order:2}}@media(max-width:560px){.wrap{padding:9px}.panel{padding:9px}.settings{grid-template-columns:1fr}.modal{padding:14px}.cards{grid-template-columns:1fr 1fr}.ability{padding:6px;min-height:125px;font-size:12px}}
 .reveal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.reveal{background:#263b44;border:1px solid #59717a;border-radius:7px;padding:9px}.reveal strong{color:#ffdb97}.reveal .init{color:#a5ddeb;float:right}
-</style></head><body><div class="wrap"><header class="top"><div><h1>⚔ EMBERWATCH</h1><div class="muted">Original four-player cooperative hex-crawl · prototype 0.8</div></div><div class="controls"><span id="roomLabel" class="room"></span><span id="netStatus" class="status">Offline · hot-seat</span><button id="campaignHub" onclick="showCampaignHub()">Campaign Hub</button><button onclick="showSetup()">Room / Setup</button><button onclick="copySave()">Export Save</button><button onclick="importSave()">Import Save</button></div></header><main class="layout"><section class="panel"><div class="controls" style="justify-content:space-between"><div><h2 id="scenario">The Cinder Vault</h2><div id="phaseInfo" class="muted"></div></div><button id="reset" class="small" onclick="resetGame()">New Scenario</button></div><div class="mapbox"><svg id="board" viewBox="0 0 820 610" role="img" aria-label="Clickable hex grid battle map"></svg></div><div class="help">Click reachable hexes to move or enemy hexes to attack after choosing an action. 🔒 Enter a sealed door to reveal the next room. ✦ Collect the archive seal, defeat the guardian, and reach the exit. Hidden rooms cannot be entered or targeted. Blue = allies; red = enemies; gold = loot; ◆ = obstacles (block walking, not sight); ▰ = walls (block movement and sight); amber = difficult terrain (+1 movement). Allies can be passed through but not landed on. Jump and flying ignore intervening ground obstacles. Targeting requires hex range and a clear corner-to-corner sight line.</div><div class="section"><h3>Scenario objectives</h3><div id="objectives" class="reveal-grid" aria-live="polite"></div></div><div class="section"><h3>Element board</h3><div id="elements" class="reveal-grid"></div><div class="help">Strong → waning → inert at round end. Infusions activate at the end of their action; consumption boosts the specified action.</div></div><div class="section"><h3>Revealed monster abilities</h3><div id="monsterCards" class="reveal-grid"></div></div><div class="section"><h3>Battle journal</h3><div id="log" class="log" aria-live="polite"></div></div></section><aside class="panel sidebar"><h2>Party and actions</h2><div id="party"></div><div id="actionUI" class="section"></div></aside></main><div class="footer">A fan-inspired original tactical prototype. Not affiliated with, endorsed by, or containing official Frosthaven content. Open this file locally for hot-seat play; use Firebase for separate devices.</div></div><div id="overlay" class="modalbg" style="display:none"></div>
+</style></head><body><div class="wrap"><header class="top"><div><h1>⚔ EMBERWATCH</h1><div class="muted">Original four-player cooperative hex-crawl · prototype 0.8.1</div></div><div class="controls"><span id="roomLabel" class="room"></span><span id="netStatus" class="status">Offline · hot-seat</span><button id="campaignHub" onclick="showCampaignHub()">Campaign Hub</button><button onclick="showSetup()">Room / Setup</button><button onclick="copySave()">Export Save</button><button onclick="importSave()">Import Save</button></div></header><main class="layout"><section class="panel"><div class="controls" style="justify-content:space-between"><div><h2 id="scenario">The Cinder Vault</h2><div id="phaseInfo" class="muted"></div></div><button id="reset" class="small" onclick="resetGame()">New Scenario</button></div><div class="mapbox"><svg id="board" viewBox="0 0 820 610" role="img" aria-label="Clickable hex grid battle map"></svg></div><div class="help">Click reachable hexes to move or enemy hexes to attack after choosing an action. 🔒 Enter a sealed door to reveal the next room. ✦ Collect the archive seal, defeat the guardian, and reach the exit. Hidden rooms cannot be entered or targeted. Blue = allies; red = enemies; gold = loot; ◆ = obstacles (block walking, not sight); ▰ = walls (block movement and sight); amber = difficult terrain (+1 movement). Allies can be passed through but not landed on. Jump and flying ignore intervening ground obstacles. Targeting requires hex range and a clear corner-to-corner sight line.</div><div class="section"><h3>Scenario objectives</h3><div id="objectives" class="reveal-grid" aria-live="polite"></div></div><div class="section"><h3>Element board</h3><div id="elements" class="reveal-grid"></div><div class="help">Strong → waning → inert at round end. Infusions activate at the end of their action; consumption boosts the specified action.</div></div><div class="section"><h3>Revealed monster abilities</h3><div id="monsterCards" class="reveal-grid"></div></div><div class="section"><h3>Battle journal</h3><div id="log" class="log" aria-live="polite"></div></div></section><aside class="panel sidebar"><h2>Party and actions</h2><div id="party"></div><div id="actionUI" class="section"></div></aside></main><div class="footer">A fan-inspired original tactical prototype. Not affiliated with, endorsed by, or containing official Frosthaven content. Open this file locally for hot-seat play; use Firebase for separate devices.</div></div><div id="overlay" class="modalbg" style="display:none"></div>
 <script type="module">
 const COLORS=['#83cbe1','#b2a5fa','#81d7ab','#e8b67d'];const ROLES=[{name:'Vanguard',hp:14},{name:'Wayfinder',hp:10},{name:'Runesmith',hp:10},{name:'Warden',hp:12}];
 const CARD_LIBRARY=[
@@ -73,7 +73,8 @@ function showCampaignHub(){if(!state)return;const c=state.campaign,locked=mode==
  $('hubClose').onclick=()=>over.style.display='none';
 }
 function ensureV05(st){
- st.version=8;
+ st.version=81;
+ st.roundEndIndex??=0;st.pendingDamage??=null;st.enemyCursor??=0;for(const p of st.players){p.spentItems??=[];}
  st.campaign=ensureCampaign(st.campaign);
  st.modifiers??={heroes:st.players.map(()=>freshModifier()),monsters:freshModifier()};
  st.modifiers.heroes??=st.players.map(()=>freshModifier());
@@ -130,9 +131,9 @@ function checkScenarioEnd(){if(!state||state.winner)return !!state?.winner;
  }
  if(state.enemies.length===0){state.winner='victory';state.phase='end';log('Victory! The Ashen Pass is secure.');finishCampaign(true);return true}return false;
 }
-function makeGame(existingCampaign){const campaign=ensureCampaign(existingCampaign);const players=ROLES.map((r,i)=>({id:'p'+i,name:r.name,maxHp:r.hp+2*(campaign.heroes[i].level-1),hp:r.hp+2*(campaign.heroes[i].level-1),q:i===0?0:i===1?1:i===2?0:1,r:i<2?4:5,hand:[0,1,2,3,4,5],discard:[],lost:[],active:[],lossOnUse:[],picked:[],ready:false,resting:false,longRestLoss:null,initChoice:0,topChoice:0,guard:campaign.heroes[i].gear.includes('armor')?1:0,coins:0,exhausted:false}));
+function makeGame(existingCampaign){const campaign=ensureCampaign(existingCampaign);const players=ROLES.map((r,i)=>({id:'p'+i,name:r.name,maxHp:r.hp+2*(campaign.heroes[i].level-1),hp:r.hp+2*(campaign.heroes[i].level-1),q:i===0?0:i===1?1:i===2?0:1,r:i<2?4:5,hand:[0,1,2,3,4,5],discard:[],lost:[],active:[],lossOnUse:[],picked:[],ready:false,resting:false,longRestLoss:null,spentItems:[],initChoice:0,topChoice:0,guard:campaign.heroes[i].gear.includes('armor')?1:0,coins:0,exhausted:false}));
  const walls=[[3,0],[3,1],[3,2],[3,4],[3,5],[6,0],[6,1],[6,2],[6,4],[6,5]];
- const st=ensureV05({version:8,campaign,scenario:{kind:'vault',revealed:[0],seal:false,exitReached:false},round:1,phase:'plan',players,enemies:CHAMBERS[0].spawn.map(e=>({...e})),rocks:[[1,2],[4,1],[5,4]],walls,difficult:[[1,3],[4,3],[7,3]],loot:[],journal:['The Cinder Vault: enter sealed doors, recover the Archive Seal (5,0), defeat the Flame Brute, and reach the extraction rune (7,5).'],order:[],turnIndex:0,monsterInit:50,actionLog:[],winner:null,rev:0});return st;
+ const st=ensureV05({version:81,campaign,scenario:{kind:'vault',revealed:[0],seal:false,exitReached:false},round:1,phase:'plan',players,enemies:CHAMBERS[0].spawn.map(e=>({...e})),rocks:[[1,2],[4,1],[5,4]],walls,difficult:[[1,3],[4,3],[7,3]],loot:[],journal:['The Cinder Vault: enter sealed doors, recover the Archive Seal (5,0), defeat the Flame Brute, and reach the extraction rune (7,5).'],order:[],turnIndex:0,monsterInit:50,actionLog:[],winner:null,rev:0});return st;
 }
 const inside=(q,r)=>q>=0&&q<8&&r>=0&&r<6;
 const contains=(arr,q,r)=>(arr||[]).some(x=>x[0]===q&&x[1]===r);
@@ -197,12 +198,82 @@ function selectCard(idx){if(state.phase!=='plan')return;const p=state.players[se
 const LOSS_TOP_CARDS=new Set(['0:5','1:5','2:5','3:5']); // Original prototype demo powers marked as one-use.
 function isLostAction(heroIndex,cardIndex,which,asBasic=false){return !asBasic&&which==='top'&&LOSS_TOP_CARDS.has(heroIndex+':'+cardIndex)}
 function moveChosenCards(p){for(const idx of p.picked){p.hand=p.hand.filter(x=>x!==idx);const area=p.lossOnUse.includes(idx)?p.lost:p.discard;if(!area.includes(idx))area.push(idx)}p.picked=[];p.lossOnUse=[];p.resting=false;p.longRestLoss=null;p.ready=false}
-function shortRestCharacter(p,heroIndex,redraw=false){
- if(p.discard.length<2)return false;
- let selected=Math.floor(Math.random()*p.discard.length),card=p.discard.splice(selected,1)[0];p.lost.push(card);p.hand.push(...p.discard);p.discard=[];
- log(p.name+' short rests: '+CARD_LIBRARY[heroIndex][card].n+' is lost.');
- if(redraw&&p.hp>1&&p.hand.length>0){p.hp--;p.lost.pop();const pool=p.hand.slice();let choices=pool.filter(x=>x!==card);if(choices.length){const index=choices[Math.floor(Math.random()*choices.length)],at=p.hand.indexOf(index);p.hand.splice(at,1);p.lost.push(index);p.hand.push(card);log(p.name+' suffers 1 damage to redraw the lost card: '+CARD_LIBRARY[heroIndex][index].n+' is lost instead.')}else p.lost.push(card)}
+
+function eligibleLossCards(heroIndex){
+ const p=state.players[heroIndex];const committed=new Set(p.picked||[]);
+ return {hand:p.hand.filter(idx=>!committed.has(idx)),discard:p.discard.slice()};
+}
+function resolveIncomingDamage(modeChoice,cards=[]){
+ const pd=state.pendingDamage;if(!pd||state.phase!=='damage')return false;
+ if(mode==='online'&&seat!==pd.heroIndex)return false;
+ const p=state.players[pd.heroIndex],eligible=eligibleLossCards(pd.heroIndex);let prevented=false;
+ if(modeChoice==='hand'){
+  if(cards.length!==1||!eligible.hand.includes(cards[0]))return false;
+  p.hand.splice(p.hand.indexOf(cards[0]),1);p.lost.push(cards[0]);prevented=true;
+ }else if(modeChoice==='discard'){
+  if(cards.length!==2||new Set(cards).size!==2||!cards.every(x=>eligible.discard.includes(x)))return false;
+  for(const idx of cards){p.discard.splice(p.discard.indexOf(idx),1);p.lost.push(idx)}prevented=true;
+ }else if(modeChoice!=='take')return false;
+ if(prevented)log(p.name+' prevents '+pd.amount+' damage by losing '+cards.map(i=>CARD_LIBRARY[pd.heroIndex][i].n).join(', ')+'.');
+ else {p.hp=Math.max(0,p.hp-pd.amount);log(p.name+' takes '+pd.amount+' damage from '+pd.source+'.');if(p.hp===0){p.exhausted=true;log(p.name+' falls in battle.')}}
+ if(pd.condition&&p.hp>0)addCondition(p,pd.condition);
+ const source=pd.source;state.pendingDamage=null;state.phase='act';
+ if(pd.resume==='enemy'){enemyTurn(pd.monsterType);if(!state.pendingDamage){state.enemyCursor=0;state.turnIndex++;advanceAutomated()}else commit()}
+ else{commit()}
  return true
+}
+function prepareIncomingDamage(heroIndex,amount,source,meta={}){
+ const p=state.players[heroIndex],raw=Math.max(0,amount+(hasCondition(p,'poison')?1:0)-Math.max(0,p.guard||0));
+ p.guard=0;if(raw===0){log(p.name+' blocks '+source+' (0 damage).');if(meta.condition)addCondition(p,meta.condition);return false}
+ state.pendingDamage={heroIndex,amount:raw,source,condition:meta.condition||null,resume:meta.resume||'enemy',monsterType:meta.monsterType||null};
+ state.phase='damage';if(mode==='offline')seat=heroIndex;commit();return true
+}
+function chooseDamageLoss(kind){
+ const opts=document.querySelectorAll('#damageChoice input[type=checkbox]:checked');
+ const cards=Array.from(opts).filter(x=>x.dataset.pool===kind).map(x=>+x.value);
+ resolveIncomingDamage(kind,cards)
+}
+function advanceRoundEnd(){
+ if(state.phase!=='roundEnd')return;
+ while(state.roundEndIndex<state.players.length){
+  const i=state.roundEndIndex,p=state.players[i];
+  if(!p.exhausted&&p.hp>0&&p.discard.length>=2){if(mode==='offline')seat=i;commit();return}
+  state.roundEndIndex++;
+ }
+ tickElements();state.monsterReveals={};state.round++;state.phase='plan';state.order=[];state.turnIndex=0;state.roundEndIndex=0;resetUI();exhaustUnavailable();
+ if(mode==='offline'){const first=state.players.findIndex(p=>!p.exhausted&&p.hp>0);seat=Math.max(0,first)}
+ if(checkScenarioEnd())state.phase='end';commit()
+}
+function resolveRoundEndChoice(choice){
+ if(state.phase!=='roundEnd'||(mode==='online'&&seat!==state.roundEndIndex))return;
+ const i=state.roundEndIndex,p=state.players[i];if(!p||p.exhausted)return;
+ if(choice==='rest'){shortRestCharacter(p,i,false)}
+ else if(choice!=='skip')return;
+ state.roundEndIndex++;advanceRoundEnd()
+}
+function redrawShortRest(){
+ const p=state.players[state.roundEndIndex],i=state.roundEndIndex,info=state.lastRest;
+ if(state.phase!=='roundEnd'||!info||info.hero!==i||info.redrawn||p.hp<=1)return;
+ const available=p.hand.filter(x=>x!==info.lost);
+ if(!available.length)return;
+ p.hp--;const replacement=available[Math.floor(Math.random()*available.length)];
+ p.hand.splice(p.hand.indexOf(replacement),1);
+ p.lost.splice(p.lost.indexOf(info.lost),1);
+ p.lost.push(replacement);p.hand.push(info.lost);info.redrawn=true;
+ log(p.name+' suffers 1 damage to redraw: '+CARD_LIBRARY[i][replacement].n+' is lost instead.');
+ commit()
+}
+function finishRestDecision(){
+ if(state.phase!=='roundEnd'||!state.lastRest)return;
+ state.lastRest=null;state.roundEndIndex++;advanceRoundEnd()
+}
+function shortRestCharacter(p,heroIndex){
+ if(p.discard.length<2)return false;
+ const idx=Math.floor(Math.random()*p.discard.length),lost=p.discard.splice(idx,1)[0];
+ p.lost.push(lost);p.hand.push(...p.discard);p.discard=[];
+ state.lastRest={hero:heroIndex,lost,redrawn:false};
+ log(p.name+' short rests: '+CARD_LIBRARY[heroIndex][lost].n+' is lost.');
+ commit();return true
 }
 function longRestCharacter(p,heroIndex){
  if(p.discard.length<2)return false;
@@ -237,12 +308,7 @@ function ready(){
  if(mode==='offline'){const next=state.players.findIndex(x=>!x.ready&&!x.exhausted&&x.hp>0);if(next>=0)seat=next}
  if(state.players.filter(x=>x.hp>0&&!x.exhausted).every(x=>x.ready))beginRound();else commit()
 }
-function shortRest(){
- const p=state.players[seat];
- if(state.phase!=='plan'||!canPlan(p)||p.ready||state.round<=1||p.discard.length<2)return;
- const redraw=confirm('Short rest: lose one random discarded card. OK = regular short rest; Cancel = short rest with one redraw (costs 1 HP if able).');
- shortRestCharacter(p,seat,!redraw);resetUI();commit()
-}
+function shortRest(){return false /* Short rests now only resolve at end of round. */}
 function beginRound(){
  state.phase='act';drawRoundMonsters();
  state.order=state.players.map((p,i)=>({type:'player',id:i,initiative:p.resting?99:p.picked.length?CARD_LIBRARY[i][p.picked[p.initChoice]].i:99})).filter(x=>!state.players[x.id].exhausted&&state.players[x.id].hp>0);
@@ -254,7 +320,7 @@ function advanceAutomated(){
  if(checkScenarioEnd()){state.phase='end';commit();return}
  if(state.turnIndex>=state.order.length){finishRound();return}
  const c=current();
- if(c.type==='enemy'){enemyTurn(c.id);state.turnIndex++;advanceAutomated();return}
+ if(c.type==='enemy'){state.enemyCursor=0;enemyTurn(c.id);if(state.pendingDamage)return;state.turnIndex++;advanceAutomated();return}
  const actor=state.players[c.id];
  if(actor.hp<=0||actor.exhausted){state.turnIndex++;advanceAutomated();return}
  if(actor.resting){longRestCharacter(actor,c.id);unitEnd(actor);state.turnIndex++;advanceAutomated();return}
@@ -263,11 +329,8 @@ function advanceAutomated(){
  ui.actor=c.id;ui.actions=[];ui.actionMode=null;ui.step=0;if(mode==='offline')seat=c.id;commit()
 }
 function finishRound(){
- for(const p of state.players){if(p.picked.length)moveChosenCards(p);p.ready=false;p.guard=0;}
- cleanupModifiers();tickElements();state.monsterReveals={};state.round++;state.phase='plan';state.order=[];state.turnIndex=0;
- exhaustUnavailable();resetUI();
- if(mode==='offline'){const first=state.players.findIndex(p=>!p.exhausted&&p.hp>0);seat=Math.max(0,first)}
- if(checkScenarioEnd()){state.phase='end'}commit()
+ for(const p of state.players){if(p.picked.length)moveChosenCards(p);p.ready=false;p.guard=0}
+ cleanupModifiers();state.phase='roundEnd';state.roundEndIndex=0;state.lastRest=null;resetUI();advanceRoundEnd()
 }
 // Monster automation v0.3: move-through-friendly, weighted shortest paths,
 // focus by shortest route to an attack hex, proximity and character initiative.
@@ -314,21 +377,25 @@ function monsterPlan(monster){
  return {spec,routes,target:chosen.target,goal:chosen.pos,path,stop,spent};
 }
 function enemyTurn(type){
- const revealed=state.monsterReveals[type];log(type+' acts: '+revealed.name+' (initiative '+revealed.initiative+').');
- for(const enemy of [...state.enemies].filter(e=>e.name===type)){
-  if(!unitStart(enemy)){log(enemy.name+' dies from Wound.');state.enemies=state.enemies.filter(e=>e!==enemy);state.loot.push([enemy.q,enemy.r]);continue}const plan=monsterPlan(enemy);if(!plan){unitEnd(enemy);continue}if(hasCondition(enemy,'stun')){log(enemy.name+' is stunned and misses its turn.');unitEnd(enemy);continue}if(revealed.selfCondition)addCondition(enemy,revealed.selfCondition);
-  if(!plan.target){log(enemy.name+' has no reachable attack position.');unitEnd(enemy);continue}
-  if(plan.stop&&(plan.stop.q!==enemy.q||plan.stop.r!==enemy.r)){
-   const prev=tileKey(enemy.q,enemy.r);enemy.q=plan.stop.q;enemy.r=plan.stop.r;
-   log(enemy.name+' moves '+prev+' → '+tileKey(enemy.q,enemy.r)+' toward '+plan.target.name+'.');
-  }
+ const revealed=state.monsterReveals[type],enemies=state.enemies.filter(e=>e.name===type);
+ if(state.enemyCursor===0)log(type+' acts: '+revealed.name+' (initiative '+revealed.initiative+').');
+ for(;state.enemyCursor<enemies.length;state.enemyCursor++){
+  const enemy=enemies[state.enemyCursor];if(enemy.hp<=0)continue;
+  if(!unitStart(enemy)){log(enemy.name+' dies from Wound.');state.enemies=state.enemies.filter(e=>e!==enemy);state.loot.push([enemy.q,enemy.r]);continue}
+  if(hasCondition(enemy,'stun')){log(enemy.name+' is stunned.');unitEnd(enemy);continue}
+  if(revealed.selfCondition)addCondition(enemy,revealed.selfCondition);
+  const plan=monsterPlan(enemy);if(!plan?.target){unitEnd(enemy);continue}
+  if(plan.stop&&(plan.stop.q!==enemy.q||plan.stop.r!==enemy.r)){enemy.q=plan.stop.q;enemy.r=plan.stop.r;log(enemy.name+' moves toward '+plan.target.name+'.')}
   const target=plan.target;
   if(target.hp>0&&axialDist(enemy,target)<=plan.spec.range&&lineOfSight(enemy,target)){
-   const roll=attackDamage(plan.spec.attack,state.modifiers.monsters);const dealt=Math.max(0,roll.damage-target.guard);target.guard=0;target.hp=Math.max(0,target.hp-dealt);
-   log(enemy.name+' attacks '+target.name+' at range '+axialDist(enemy,target)+' for '+dealt+' ('+modifierLabel(roll.mod)+' modifier).');
-   if(target.hp===0){target.exhausted=true;log(target.name+' falls in battle.')}
-  }else log(enemy.name+' prepares an attack on '+target.name+' (not yet in range/LOS).');
+   const roll=attackDamage(plan.spec.attack,state.modifiers.monsters);
+   log(enemy.name+' attacks '+target.name+' ('+modifierLabel(roll.mod)+').');
+   unitEnd(enemy);state.enemyCursor++;
+   if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,condition:revealed.condition}))return;
+   state.enemyCursor--;
+  }else{log(enemy.name+' has no attack in range.');unitEnd(enemy)}
  }
+ state.enemyCursor=0
 }
 function offerAction(which,asBasic=false){if(state.phase!=='act'||!myTurn()||ui.actionMode||ui.actions.includes(which))return;let actor=currentPlayer(),idx=actor.picked[which==='top'?0:1];if(idx===undefined)return;let data=asBasic?(which==='top'?['attack',2,1]:['move',2]):CARD_LIBRARY[state.order[state.turnIndex].id][idx][which==='top'?'t':'b'];const [rawKind,value,range]=data;const kind=['jump','fly'].includes(rawKind)?'move':rawKind;const movementMode=['jump','fly'].includes(rawKind)?rawKind:'walk';const card=asBasic?{}:CARD_LIBRARY[state.order[state.turnIndex].id][idx];const empower=card.consume&&consumeElement(card.consume)?1:0;const gear=state.campaign.heroes[state.players.indexOf(actor)].gear;const enhanced=!asBasic&&state.campaign.heroes[state.players.indexOf(actor)].upgrades.includes(idx)?1:0;const power=value+empower+enhanced+(kind==='attack'&&gear.includes('sword')?1:0)+(kind==='move'&&gear.includes('boots')?1:0);if(kind==='guard'){actor.guard+=power;log(actor.name+' gains '+power+' Guard.');if(card.infuse)infuse(card.infuse);if(isLostAction(state.order[state.turnIndex].id,idx,which,asBasic))actor.lossOnUse.push(idx);ui.actions.push(which);commit();return}if(kind==='attack'&&hasCondition(actor,'disarm')){log(actor.name+' is disarmed and cannot attack.');ui.actions.push(which);commit();return}if(kind==='move'&&hasCondition(actor,'immobilize')){log(actor.name+' is immobilized and cannot move.');ui.actions.push(which);commit();return}let valid=kind==='move'?reachable(actor,power,movementMode):targets(actor,range,kind);if(kind==='heal'&&valid.length===0){ui.actions.push(which);commit();return}ui.actionMode={kind,value:power,range,movementMode,which,cardIndex:idx,asBasic,condition:card.condition,infuse:card.infuse,valid:valid.map(x=>({q:x.q,r:x.r}))};render()}
 function finishAction(){const a=ui.actionMode,p=currentPlayer();if(isLostAction(state.order[state.turnIndex].id,a.cardIndex,a.which,a.asBasic))p.lossOnUse.push(a.cardIndex);ui.actions.push(a.which);ui.actionMode=null;commit()}
@@ -338,7 +405,15 @@ function endTurn(){
  const actor=currentPlayer();if(ui.actionMode){ui.actions.push(ui.actionMode.which);ui.actionMode=null}
  unitEnd(actor);moveChosenCards(actor);state.turnIndex++;resetUI();advanceAutomated()
 }
-function render(){if(!state)return;$('roomLabel').textContent=roomCode?'Room '+roomCode:'';$('netStatus').textContent=mode==='online'?'Online · seat '+(seat+1):'Offline · hot-seat';$('scenario').textContent=state.scenario?.kind==='vault'?'The Cinder Vault':'The Ashen Pass (legacy)';$('objectives').innerHTML=state.scenario?.kind==='vault'?`<div class="reveal"><strong>Rooms</strong><div class="help">${state.scenario.revealed.length}/3 revealed</div></div><div class="reveal"><strong>Archive Seal</strong><div class="help">${state.scenario.seal?'✓ Retrieved':'✦ Find at 5,0'}</div></div><div class="reveal"><strong>Guardian</strong><div class="help">${!state.scenario.revealed.includes(2)?'Unrevealed':state.enemies.some(e=>e.name==='Flame Brute')?'Alive':'✓ Defeated'}</div></div><div class="reveal"><strong>Extraction</strong><div class="help">${state.scenario.exitReached?'✓ Reached':'↗ Reach 7,5'}</div></div>`:'<div class="help">Defeat all remaining enemies.</div>';$('phaseInfo').textContent=state.winner?(state.winner==='victory'?'VICTORY':'DEFEAT'):'Round '+state.round+' · '+(state.phase==='plan'?'Secret card planning':'Initiative '+(current()?.initiative??''));$('elements').innerHTML=ELEMENT_TYPES.map(e=>`<div class="reveal"><strong>${e.toUpperCase()}</strong><div class="help">${state.elements?.[e]===2?'● Strong':state.elements?.[e]===1?'◐ Waning':'○ Inert'}</div></div>`).join('');$('monsterCards').innerHTML=Object.values(state.monsterReveals||{}).map(c=>`<div class="reveal"><strong>${esc(c.type)} · ${esc(c.name)}</strong> <span class="init">⚡${c.initiative}</span><div class="help">Move ${Math.max(0,monsterProfile({name:c.type}).move+c.move)} · Attack ${Math.max(0,monsterProfile({name:c.type}).attack+c.attack)} · Range ${Math.max(1,monsterProfile({name:c.type}).range+c.range)}${c.condition?' · '+c.condition:''}${c.selfCondition?' · '+c.selfCondition+' self':''}</div></div>`).join('')||'<div class="help">Monster abilities are revealed when all heroes are ready.</div>';$('log').innerHTML=state.journal.map(x=>'<div>'+esc(x)+'</div>').join('');drawBoard();$('party').innerHTML=state.players.map((p,i)=>`<div class="character ${(state.phase==='plan'&&seat===i||state.phase==='act'&&current()?.id===i&&current()?.type==='player')?'current':''}"><div class="charhead"><strong style="color:${COLORS[i]}">${i+1}. ${p.name}</strong><span>${p.hp>0?`♥ ${p.hp}/${p.maxHp}`:'☠ Down'}</span></div><div class="stats">${p.ready?'✓ Ready':p.exhausted?'Exhausted':'Planning'} · Hand ${p.hand.length} · Discard ${p.discard.length} · Lost ${p.lost.length} · Active ${(p.active||[]).length} · 🪙 ${p.coins} · L${state.campaign.heroes[i].level} XP ${state.campaign.heroes[i].xp} ${p.guard?'· Guard '+p.guard:''}<div class="help">${esc(conditionLabel(p))}</div></div></div>`).join('');let a=$('actionUI');if(state.phase==='end'){a.innerHTML=`<h2>${state.winner==='victory'?'Mission accomplished!':'Party defeated'}</h2><p>Rounds survived: ${state.round}. Coins: ${state.players.reduce((s,p)=>s+p.coins,0)}.</p><button id="again" class="primary">Play again</button>`;$('again').onclick=resetGame;return}if(state.phase==='plan'){let p=state.players[seat];if(mode==='online'&&p.ready){a.innerHTML='<h3>Waiting for other players…</h3><p>Each player secretly selects two cards.</p>';return}if(p.exhausted){a.innerHTML='<h3>This character is exhausted.</h3>';return}a.innerHTML=`<h3>${mode==='offline'?'Hot-seat · ':''}${p.name}: choose two cards</h3><p class="help">Choose any two cards, assign either card to the top action, then choose an initiative card separately. A short rest is available between rounds; a long rest replaces your entire turn at initiative 99.</p><div class="cards">${p.hand.map(idx=>{let c=CARD_LIBRARY[seat][idx];return `<button class="ability ${ui.selected.includes(idx)?'selected':''}" data-card="${idx}"><span><strong>${esc(c.n)}</strong> <span class="init">⚡${c.i}</span></span><span class="ability-text">▲ ${describe(c.t)}<br>▼ ${describe(c.b)}${c.condition?' · '+c.condition:''}${c.infuse?' · infuse '+c.infuse:''}${c.consume?' · consume '+c.consume+' (+1)':''}</span><span class="tag">${ui.selected.indexOf(idx)===ui.topChoice?'TOP CARD':ui.selected.includes(idx)?'BOTTOM CARD':'Choose'}</span></button>`}).join('')}</div><div class="section"><div class="controls"><label>Top action from <select id="topChoice"><option value="0">First selected</option><option value="1">Second selected</option></select></label><label>Initiative from <select id="initChoice"><option value="0">First selected</option><option value="1">Second selected</option></select></label><button id="ready" class="primary" ${ui.selected.length!==2?'disabled':''}>Lock in cards</button><button id="rest" ${state.round>1&&p.discard.length>=2?'':'disabled'}>Short rest</button><label>Long rest loss <select id="longRestCard">${p.discard.map(idx=>`<option value="${idx}">${esc(CARD_LIBRARY[seat][idx].n)}</option>`).join('')}</select></label><button id="longRest" ${p.discard.length>=2?'':'disabled'}>Long rest (99)</button></div></div>`;a.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>selectCard(+b.dataset.card));$('topChoice').value=String(ui.topChoice);$('topChoice').onchange=e=>setTopChoice(e.target.value);$('initChoice').value=String(ui.initiative);$('initChoice').onchange=e=>ui.initiative=+e.target.value;$('ready').onclick=ready;$('rest').onclick=shortRest;$('longRest').onclick=declareLongRest;return}
+function render(){if(!state)return;$('roomLabel').textContent=roomCode?'Room '+roomCode:'';$('netStatus').textContent=mode==='online'?'Online · seat '+(seat+1):'Offline · hot-seat';$('scenario').textContent=state.scenario?.kind==='vault'?'The Cinder Vault':'The Ashen Pass (legacy)';$('objectives').innerHTML=state.scenario?.kind==='vault'?`<div class="reveal"><strong>Rooms</strong><div class="help">${state.scenario.revealed.length}/3 revealed</div></div><div class="reveal"><strong>Archive Seal</strong><div class="help">${state.scenario.seal?'✓ Retrieved':'✦ Find at 5,0'}</div></div><div class="reveal"><strong>Guardian</strong><div class="help">${!state.scenario.revealed.includes(2)?'Unrevealed':state.enemies.some(e=>e.name==='Flame Brute')?'Alive':'✓ Defeated'}</div></div><div class="reveal"><strong>Extraction</strong><div class="help">${state.scenario.exitReached?'✓ Reached':'↗ Reach 7,5'}</div></div>`:'<div class="help">Defeat all remaining enemies.</div>';$('phaseInfo').textContent=state.winner?(state.winner==='victory'?'VICTORY':'DEFEAT'):'Round '+state.round+' · '+(state.phase==='plan'?'Secret card planning':state.phase==='roundEnd'?'End of round · short rests':state.phase==='damage'?'Damage prevention':'Initiative '+(current()?.initiative??''));$('elements').innerHTML=ELEMENT_TYPES.map(e=>`<div class="reveal"><strong>${e.toUpperCase()}</strong><div class="help">${state.elements?.[e]===2?'● Strong':state.elements?.[e]===1?'◐ Waning':'○ Inert'}</div></div>`).join('');$('monsterCards').innerHTML=Object.values(state.monsterReveals||{}).map(c=>`<div class="reveal"><strong>${esc(c.type)} · ${esc(c.name)}</strong> <span class="init">⚡${c.initiative}</span><div class="help">Move ${Math.max(0,monsterProfile({name:c.type}).move+c.move)} · Attack ${Math.max(0,monsterProfile({name:c.type}).attack+c.attack)} · Range ${Math.max(1,monsterProfile({name:c.type}).range+c.range)}${c.condition?' · '+c.condition:''}${c.selfCondition?' · '+c.selfCondition+' self':''}</div></div>`).join('')||'<div class="help">Monster abilities are revealed when all heroes are ready.</div>';$('log').innerHTML=state.journal.map(x=>'<div>'+esc(x)+'</div>').join('');drawBoard();$('party').innerHTML=state.players.map((p,i)=>`<div class="character ${(state.phase==='plan'&&seat===i||state.phase==='act'&&current()?.id===i&&current()?.type==='player')?'current':''}"><div class="charhead"><strong style="color:${COLORS[i]}">${i+1}. ${p.name}</strong><span>${p.hp>0?`♥ ${p.hp}/${p.maxHp}`:'☠ Down'}</span></div><div class="stats">${p.ready?'✓ Ready':p.exhausted?'Exhausted':'Planning'} · Hand ${p.hand.length} · Discard ${p.discard.length} · Lost ${p.lost.length} · Active ${(p.active||[]).length} · 🪙 ${p.coins} · L${state.campaign.heroes[i].level} XP ${state.campaign.heroes[i].xp} ${p.guard?'· Guard '+p.guard:''}<div class="help">${esc(conditionLabel(p))}</div></div></div>`).join('');let a=$('actionUI');if(state.phase==='damage'){
+ const pd=state.pendingDamage,p=state.players[pd.heroIndex],eligible=eligibleLossCards(pd.heroIndex);
+ a.innerHTML=`<div id="damageChoice"><h3>🛡 Damage prevention: ${p.name}</h3><p>${pd.source} deals <strong>${pd.amount}</strong> damage. Take damage, lose one card from hand, or lose two from discard. Selected action cards are not eligible.</p><button id="takeDamage" class="primary">Take ${pd.amount} damage</button><div class="section"><h3>Lose one hand card</h3>${eligible.hand.map(i=>`<label class="pill"><input type="checkbox" data-pool="hand" value="${i}"> ${esc(CARD_LIBRARY[pd.heroIndex][i].n)}</label>`).join('')}<p><button id="loseHand" ${eligible.hand.length?'':'disabled'}>Negate with hand card</button></p></div><div class="section"><h3>Lose two discarded cards</h3>${eligible.discard.map(i=>`<label class="pill"><input type="checkbox" data-pool="discard" value="${i}"> ${esc(CARD_LIBRARY[pd.heroIndex][i].n)}</label>`).join('')}<p><button id="loseDiscard" ${eligible.discard.length>=2?'':'disabled'}>Negate with two discards</button></p></div></div>`;
+ $('takeDamage').onclick=()=>resolveIncomingDamage('take');$('loseHand').onclick=()=>chooseDamageLoss('hand');$('loseDiscard').onclick=()=>chooseDamageLoss('discard');return
+}if(state.phase==='roundEnd'){
+ const i=state.roundEndIndex,p=state.players[i],info=state.lastRest;
+ a.innerHTML=info?`<h3>${p.name} · short rest</h3><p>Randomly lost: <strong>${esc(CARD_LIBRARY[i][info.lost].n)}</strong></p><button id="redrawRest" ${info.redrawn||p.hp<=1||p.hand.length<1?'disabled':''}>Suffer 1 HP to redraw once</button><button id="finishRest" class="primary">Accept rest</button>`:`<h3>End of round: ${p.name}</h3><p>Rest now, or leave the discard pile untouched and continue.</p><button id="restNow" class="primary">Short rest</button><button id="skipRest">Skip rest</button>`;
+ if(info){$('redrawRest').onclick=redrawShortRest;$('finishRest').onclick=finishRestDecision}else{$('restNow').onclick=()=>resolveRoundEndChoice('rest');$('skipRest').onclick=()=>resolveRoundEndChoice('skip')}return
+}if(state.phase==='end'){a.innerHTML=`<h2>${state.winner==='victory'?'Mission accomplished!':'Party defeated'}</h2><p>Rounds survived: ${state.round}. Coins: ${state.players.reduce((s,p)=>s+p.coins,0)}.</p><button id="again" class="primary">Play again</button>`;$('again').onclick=resetGame;return}if(state.phase==='plan'){let p=state.players[seat];if(mode==='online'&&p.ready){a.innerHTML='<h3>Waiting for other players…</h3><p>Each player secretly selects two cards.</p>';return}if(p.exhausted){a.innerHTML='<h3>This character is exhausted.</h3>';return}a.innerHTML=`<h3>${mode==='offline'?'Hot-seat · ':''}${p.name}: choose two cards</h3><p class="help">Choose any two cards, assign either card to the top action, then choose an initiative card separately. A short rest is available between rounds; a long rest replaces your entire turn at initiative 99.</p><div class="cards">${p.hand.map(idx=>{let c=CARD_LIBRARY[seat][idx];return `<button class="ability ${ui.selected.includes(idx)?'selected':''}" data-card="${idx}"><span><strong>${esc(c.n)}</strong> <span class="init">⚡${c.i}</span></span><span class="ability-text">▲ ${describe(c.t)}<br>▼ ${describe(c.b)}${c.condition?' · '+c.condition:''}${c.infuse?' · infuse '+c.infuse:''}${c.consume?' · consume '+c.consume+' (+1)':''}</span><span class="tag">${ui.selected.indexOf(idx)===ui.topChoice?'TOP CARD':ui.selected.includes(idx)?'BOTTOM CARD':'Choose'}</span></button>`}).join('')}</div><div class="section"><div class="controls"><label>Top action from <select id="topChoice"><option value="0">First selected</option><option value="1">Second selected</option></select></label><label>Initiative from <select id="initChoice"><option value="0">First selected</option><option value="1">Second selected</option></select></label><button id="ready" class="primary" ${ui.selected.length!==2?'disabled':''}>Lock in cards</button><label>Long rest loss <select id="longRestCard">${p.discard.map(idx=>`<option value="${idx}">${esc(CARD_LIBRARY[seat][idx].n)}</option>`).join('')}</select></label><button id="longRest" ${p.discard.length>=2?'':'disabled'}>Long rest (99)</button></div></div>`;a.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>selectCard(+b.dataset.card));$('topChoice').value=String(ui.topChoice);$('topChoice').onchange=e=>setTopChoice(e.target.value);$('initChoice').value=String(ui.initiative);$('initChoice').onchange=e=>ui.initiative=+e.target.value;$('ready').onclick=ready;$('longRest').onclick=declareLongRest;return}
 let c=current();if(c?.type!=='player'){a.innerHTML='<h3>Enemies acting…</h3>';return}let p=state.players[c.id];if(!myTurn()){a.innerHTML=`<h3>Waiting for ${p.name}</h3><p>Initiative ${c.initiative}</p>`;return}let cards=p.picked.map(idx=>CARD_LIBRARY[c.id][idx]);a.innerHTML=`<h3>${p.name}'s turn · Initiative ${c.initiative}</h3><p class="help">Each of your two actions can be used once. Resolve them in either order. Guard reduces the next incoming hit.</p><div class="cards">${cards.map((cd,i)=>`<div class="ability"><strong>${esc(cd.n)} ⚡${cd.i}</strong><span class="ability-text">${i===0?'▲ '+describe(cd.t):'▼ '+describe(cd.b)}${isLostAction(c.id,p.picked[i],i===0?'top':'bottom')?' · 🔥 LOST ON USE':''}${cd.condition?' · '+cd.condition:''}${cd.infuse?' · infuse '+cd.infuse:''}${cd.consume?' · consume '+cd.consume+' (+1)':''}</span><div class="controls"><button class="small" data-do="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')||ui.actionMode?'disabled':''}>Use</button><button class="small" data-basic="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')||ui.actionMode?'disabled':''}>Basic</button><button class="small" data-skip="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')?'disabled':''}>Skip</button></div></div>`).join('')}</div>${ui.actionMode?`<p class="status">Select a highlighted hex for ${ui.actionMode.kind} ${ui.actionMode.value}. ${ui.actionMode.valid.length?'':'No eligible hexes. Skip this action.'}</p><button id="cancelTarget">Cancel / skip target</button>`:''}<div class="section"><button id="endTurn" class="primary">End turn</button></div>`;a.querySelectorAll('[data-do]').forEach(b=>b.onclick=()=>offerAction(b.dataset.do));a.querySelectorAll('[data-basic]').forEach(b=>b.onclick=()=>offerAction(b.dataset.basic,true));a.querySelectorAll('[data-skip]').forEach(b=>b.onclick=()=>skipAction(b.dataset.skip));if($('cancelTarget'))$('cancelTarget').onclick=()=>{ui.actions.push(ui.actionMode.which);ui.actionMode=null;render()};$('endTurn').onclick=endTurn}
 function describe(a){return ['move','jump','fly'].includes(a[0])?(a[0]==='jump'?'Jump ':a[0]==='fly'?'Fly ':'Move ')+a[1]:a[0]==='guard'?'Guard '+a[1]:a[0]==='heal'?'Heal '+a[1]+' · range '+a[2]:'Attack '+a[1]+' · range '+a[2]}
 function esc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
