@@ -17,6 +17,23 @@ Goal: a rule-faithful tactical rules engine for four-player co-op, using origina
 6. **Rounds and conditions:** precise start/end of turn and round timing, infusion end-of-turn semantics, persistent effects, conditions and immunities, summons.
 7. **Information security:** four-player simultaneous planning cannot broadcast secret card selections to other clients; authoritative turn transactions and reconnect safety are necessary for online fidelity.
 
+## F1 implementation checkpoint — v0.8
+
+Implemented and browser-tested in the current HTML5 game:
+- Independent two-card selection: choose either card for top, the other for bottom, with a separately chosen initiative card.
+- Declared long rest in planning, initiative 99, chosen discarded card lost, remaining discard recovered, Heal 2.
+- Short rest from the next planning window, randomly lose one discarded card, recover the rest, optional one-damage redraw.
+- Separate hand, discard and lost piles, and loss-on-use demo top abilities (the final card library will supply loss icons as structured card data).
+- End-of-turn card placement rather than the old automatic end-round card recycling.
+- Exhaustion for insufficient hand/discard cards at the start of a new round.
+- Save migration for additional card state.
+
+**Important outstanding fidelity gaps:** The short-rest decision is currently offered in the next planning phase rather than an explicit end-of-round phase. Card loss to prevent incoming damage is not implemented. Active/persistent abilities, precise card recovery interactions, long-rest item refresh and condition interactions are incomplete. The prototype still uses only six original cards per character and does not yet load official class content. Multiplayer private planning remains unverified; online play is experimental.
+
+The ten passing Chromium smoke tests verify specific example flows, not comprehensive conformance with the Frosthaven rulebook.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
