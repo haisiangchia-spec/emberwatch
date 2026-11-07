@@ -433,6 +433,7 @@ test('Static Bloom can attack two different enemy targets', async ({page})=>{
   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
   s.phase='act';s.order=[{type:'player',id:2,initiative:43}];s.turnIndex=0;
   s.players[2].picked=[5,0];
+  s.modifiers.heroes[2].draw=[0,0];s.modifiers.heroes[2].discard=[];
   s.enemies=[
    {id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{}},
    {id:'e1',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
@@ -545,6 +546,7 @@ test('Arc Pulse area anchor selects a two-hex pattern and damages both enemies',
   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
   s.phase='act';s.order=[{type:'player',id:2,initiative:58}];s.turnIndex=0;
   s.players[2].picked=[1,0];
+  s.modifiers.heroes[2].draw=[0,0];s.modifiers.heroes[2].discard=[];
   s.enemies=[
    {id:'test-a',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{}},
    {id:'test-b',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
