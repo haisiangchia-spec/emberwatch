@@ -962,9 +962,10 @@ function moveQueuedMonsterStep(event){
      const cost=hex.slide?0:difficult(hex.q,hex.r)?2:1;
      if(spent+cost>(plan.spec?.move??0))break;
      const occupied=unitAt(hex.q,hex.r);
-     if(occupied&&occupied!==enemy){
-       // An occupied landing hex invalidates this slide continuation.
-       // Do not move into the occupant or teleport beyond it.
+     if(occupied&&occupied!==enemy&&
+       (hex.slide||(hex.q===plan.stop.q&&hex.r===plan.stop.r))){
+       // Monsters may cross allied figures on ordinary path steps, but may
+       // neither end on a figure nor slide through an occupied hex.
        break
      }
      spent+=cost;
