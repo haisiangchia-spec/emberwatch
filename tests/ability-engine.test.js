@@ -253,8 +253,8 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:4,optional:true}],{targetId:'e0'}),/Optional attack selection/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
- [{type:'attack',value:4},{type:'shield',value:1}],{targetId:'e0'}),
- /Attack must be terminal/);
+ [{type:'attack',value:4},{type:'move',value:1}],{targetId:'e0'}),
+ /Unsupported post-attack effect/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:-1}],{targetId:'e0'}),/Invalid Attack/);
 console.log('F2 hero attack compiler and legacy continuation compatibility assertions passed');
@@ -298,3 +298,35 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'shield',value:Infinity},{type:'attack',value:3}
 ],{targetId:'e0'}),/Invalid pre-attack effect/);
 console.log('F2 mixed ordered pre-attack effects and terminal hit conformance passed');
+
+
+const postHit=abilities.compileHeroQueue('p0',{
+ kind:'attack',value:5,range:1,which:'top',cardIndex:5,asBasic:false
+},[
+ {type:'attack',value:'action',range:1},
+ {type:'shield',value:1,duration:'round',optional:true},
+ {type:'heal',value:2,range:2,optional:true}
+],{targetId:'e0',deferTargets:true});
+assert.deepEqual(postHit.map(e=>e.type),
+ ['heroAttackHit','heroAttackPostHit']);
+assert.deepEqual(postHit[0].action.postAttackSteps,[
+ {type:'shield',value:1,duration:'round',optional:true},
+ {type:'heal',value:2,range:2,optional:true}
+]);
+assert.deepEqual(postHit[1].action.postAttackSteps,
+ postHit[0].action.postAttackSteps);
+const compiledTail=abilities.compileHeroQueue('p0',postHit[0].action,
+ postHit[0].action.postAttackSteps,{deferTargets:true});
+assert.deepEqual(compiledTail.map(e=>e.type),[
+ 'heroAbilityEffect','heroAbilityEffect','heroActionComplete']);
+assert.deepEqual(JSON.parse(JSON.stringify(compiledTail)),compiledTail);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:4},{type:'attack',value:4}
+],{targetId:'e0'}),/Only one attack/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:4},{type:'heal',value:2}
+],{targetId:'e0'}),/Post-attack mandatory targets require deferred targeting/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:4},{type:'retaliate',value:-1}
+],{targetId:'e0'}),/Invalid post-attack effect/);
+console.log('F2 post-hit saved suffix compilation and replay safety assertions passed');
