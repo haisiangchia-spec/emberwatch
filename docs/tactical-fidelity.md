@@ -433,6 +433,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.13.4 repeated Attack target checkpoints
+
+- The shared hero ability compiler accepts **two or three consecutive Attack instructions**, optionally followed by supported post-attack effects. Attack instructions must include explicit damage values and positive ranges; optional attacks and attacks interleaved with other abilities are not accepted.
+- After each completed hit, linked conditions, displacements and retaliation, the current `postAttackSteps` tail is advanced exactly once. If another Attack is next, the queue emits a fresh serializable `heroAttackTargetChoice`; the player selects a currently legal target with current line-of-sight and range. Confirming it starts only the new attack, without replaying previous modifier draws or damage. When no targets remain, the action can finish without a new draw.
+- Unit and browser fixtures test ordered compilation, target validation, retaliation interruptions, reload, two distinct modifier draws, a final optional Shield, and the no-target branch.
+- **Still F2 partial:** arbitrary interleaving, repeat movement, multi-target combination semantics, advanced persistent effects, monster/class ability catalogue and full official conformance are not yet complete.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
