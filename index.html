@@ -247,8 +247,8 @@ function advanceRoundEnd(){
 function resolveRoundEndChoice(choice){
  if(state.phase!=='roundEnd'||(mode==='online'&&seat!==state.roundEndIndex))return;
  const i=state.roundEndIndex,p=state.players[i];if(!p||p.exhausted)return;
- if(choice==='rest'){shortRestCharacter(p,i,false)}
- else if(choice!=='skip')return;
+ if(choice==='rest'){shortRestCharacter(p,i);return}
+ if(choice!=='skip')return;
  state.roundEndIndex++;advanceRoundEnd()
 }
 function redrawShortRest(){
