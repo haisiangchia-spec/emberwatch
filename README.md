@@ -1,3 +1,11 @@
+# Emberwatch v0.13.3 — Move → Attack With Saved Target Selection
+
+The structured hero action compiler can queue Move followed by a terminal Attack. It resolves movement using the unchanged per-hex terrain engine, then pauses for enemy target selection from the hero's new location. The selection survives reload, is revalidated before the attack, and can complete without a target when no enemy is eligible. Regression tests cover checkpoint persistence and replay prevention.
+
+F2 remains open for multi-target mixed actions, optional attacks and advanced class mechanics.
+
+---
+
 # Emberwatch v0.13.2 — Generic Movement Compilation
 
 All live hero Move actions now compile their already-planned paths into serializable per-hex `heroMoveStep` events, using the unchanged tactical movement and terrain resolver. Structured cards can append a supported optional effect after movement. A dedicated browser fixture demonstrates Move → optional Shield 1 without changing existing demo cards. Tests cover reload, one-time movement, effect decisions and invalid routes.
