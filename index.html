@@ -930,8 +930,9 @@ function icySlideFrom(from,entry,unit,mode='walk'){
    icy:state.icy||[],mode,
    canEnter:hex=>inside(hex.q,hex.r)&&discovered(hex.q,hex.r)&&
      !wall(hex.q,hex.r)&&!rock(hex.q,hex.r)&&
-     !unitAt(hex.q,hex.r)&&!doorAt(hex.q,hex.r)?.reveal||
-     false
+     !unitAt(hex.q,hex.r)&&
+     !(mode==='forced'&&doorAt(hex.q,hex.r)&&
+       !state.scenario.revealed.includes(doorAt(hex.q,hex.r).reveal))
  })
 }
 function moveQueuedMonsterStep(event){
