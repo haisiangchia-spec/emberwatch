@@ -56,6 +56,7 @@
    const scored=legal.map(c=>{
      const selected=c.targets.slice().sort((a,b)=>
        (a.id===focusId?-1:b.id===focusId?1:0)||
+       Number(!!a.disadvantaged)-Number(!!b.disadvantaged)||
        (a.seat??999)-(b.seat??999)||String(a.id).localeCompare(String(b.id)))
        .slice(0,maxTargets);
      return {q:c.q,r:c.r,cost:c.cost,negative:c.negative,
