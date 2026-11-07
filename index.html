@@ -307,14 +307,10 @@ function clickHex(q,r){
  }
  if(a.kind==='move'){resolveHeroBoardAction(a,{q,r});return }else if(a.kind==='attack'){
    const target=state.enemies.find(e=>e.q===q&&e.r===r);if(!target)return;
-   state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
-     {type:'heroAttackHit',actorId:actor.id,targetId:target.id,action:clone(a)},
-     ...window.EmberwatchAbilities.linkedAttackSteps(a).map(step=>({
-       type:'heroAttackLinked',actorId:actor.id,targetId:target.id,
-       step:clone(step),action:clone(a)
-     })),
-     {type:'heroAttackPostHit',actorId:actor.id,targetId:target.id,action:clone(a)}
-   ]);
+   state.combatQueue=window.EmberwatchCombatQueue.create('hero',
+     window.EmberwatchAbilities.compileHeroQueue(actor.id,a,[
+       {type:'attack',value:'action',range:a.range}
+     ],{targetId:target.id}));
    runCombatQueue();return
  }else if(a.kind==='heal'){
    const target=state.players.find(p=>p.q===q&&p.r===r);
