@@ -1,0 +1,253 @@
+
+const COLORS=['#83cbe1','#b2a5fa','#81d7ab','#e8b67d'];const ROLES=[{name:'Vanguard',hp:14},{name:'Wayfinder',hp:10},{name:'Runesmith',hp:10},{name:'Warden',hp:12}];
+const CARD_LIBRARY=[
+[{n:'Shield Rush',i:18,condition:'immobilize',t:['attack',3,1],b:['move',3],desc:'Attack 3 · range 1 / Move 3'},{n:'Brace',i:51,infuse:'earth',t:['attack',2,1],b:['guard',2],desc:'Attack 2 / Guard 2'},{n:'Iron Sweep',i:39,condition:'disarm',t:['attack',4,1],b:['move',2],desc:'Attack 4 / Move 2'},{n:'Forward March',i:26,t:['attack',2,1],b:['move',4],desc:'Attack 2 / Move 4'},{n:'Hold the Line',i:72,t:['heal',3,1],b:['guard',3],desc:'Heal 3 / Guard 3'},{n:'Hammerfall',i:62,t:['attack',5,1],b:['move',2],desc:'Attack 5 / Move 2'}],
+[{n:'Quick Shot',i:12,condition:'muddle',t:['attack',2,4],b:['move',3],desc:'Ranged Attack 2 / Move 3'},{n:'Mark Quarry',i:23,condition:'poison',t:['attack',3,3],b:['move',2],desc:'Ranged Attack 3 / Move 2'},{n:'Trail Step',i:16,infuse:'air',t:['attack',2,3],b:['jump',4],desc:'Ranged Attack 2 / Jump 4'},{n:'Piercing Arrow',i:46,t:['attack',4,3],b:['move',2],desc:'Ranged Attack 4 / Move 2'},{n:'Field Dressing',i:69,t:['heal',3,2],b:['move',3],desc:'Heal 3 range 2 / Move 3'},{n:'Last Light',i:34,t:['attack',3,4],b:['guard',2],desc:'Ranged Attack 3 / Guard 2'}],
+[{n:'Spark Lance',i:29,infuse:'fire',t:['attack',3,3],b:['move',2],desc:'Ranged Attack 3 / Move 2'},{n:'Arc Pulse',i:58,consume:'fire',condition:'stun',t:['attack',4,2],b:['move',2],desc:'Ranged Attack 4 / Move 2'},{n:'Kinetic Step',i:21,t:['attack',2,3],b:['fly',4],desc:'Ranged Attack 2 / Fly 4'},{n:'Restoration',i:74,infuse:'light',t:['heal',4,3],b:['move',2],desc:'Heal 4 range 3 / Move 2'},{n:'Ember Bolt',i:31,consume:'fire',t:['attack',3,4],b:['guard',2],desc:'Ranged Attack 3 / Guard 2'},{n:'Static Bloom',i:43,t:['attack',2,4],b:['move',3],desc:'Ranged Attack 2 / Move 3'}],
+[{n:'Thorn Strike',i:27,condition:'wound',t:['attack',3,1],b:['move',3],desc:'Attack 3 / Move 3'},{n:'Aid the Fallen',i:63,infuse:'light',t:['heal',3,2],b:['guard',2],desc:'Heal 3 range 2 / Guard 2'},{n:'Oakheart',i:71,infuse:'earth',t:['attack',2,1],b:['guard',4],desc:'Attack 2 / Guard 4'},{n:'Vine Reach',i:33,consume:'earth',condition:'immobilize',t:['attack',3,2],b:['move',2],desc:'Attack 3 range 2 / Move 2'},{n:'Wild Sprint',i:15,t:['attack',2,1],b:['move',4],desc:'Attack 2 / Move 4'},{n:'Briar Crash',i:47,t:['attack',4,1],b:['move',2],desc:'Attack 4 / Move 2'}]
+];
+// Each monster family draws one shared ability card each round; separate discard piles reshuffle.
+// All abilities are original Emberwatch content and deliberately use simplified actions.
+const MONSTER_ABILITIES={
+ 'Ash Raider':[
+  {name:'Blade Charge',initiative:19,move:1,attack:0,range:0,shuffle:false},
+  {name:'Cautious Advance',initiative:58,move:0,attack:0,range:0,shuffle:false},
+  {name:'Savage Lunge',condition:'wound',initiative:28,move:1,attack:1,range:0,shuffle:false},
+  {name:'Weary Swing',initiative:78,move:-1,attack:1,range:0,shuffle:false},
+  {name:'Quick Cut',condition:'poison',initiative:13,move:0,attack:-1,range:0,shuffle:false},
+  {name:'Regroup',initiative:83,move:0,attack:0,range:0,shuffle:true}
+ ],
+ 'Ash Archer':[
+  {name:'Loose and Retreat',initiative:24,move:1,attack:0,range:0,shuffle:false},
+  {name:'Aimed Volley',initiative:66,move:-1,attack:1,range:1,shuffle:false},
+  {name:'Rapid Shot',condition:'muddle',initiative:15,move:0,attack:-1,range:0,shuffle:false},
+  {name:'Long Sight',initiative:51,move:0,attack:0,range:1,shuffle:false},
+  {name:'Change Position',initiative:37,move:1,attack:-1,range:0,shuffle:false},
+  {name:'Steady Draw',selfCondition:'strengthen',initiative:72,move:0,attack:1,range:0,shuffle:true}
+ ],
+ 'Flame Brute':[
+  {name:'Heavy Slam',initiative:74,move:0,attack:1,range:0,shuffle:false},
+  {name:'Raging Advance',initiative:23,move:1,attack:0,range:0,shuffle:false},
+  {name:'Crushing Blow',condition:'stun',initiative:88,move:-1,attack:2,range:0,shuffle:false},
+  {name:'Low Sweep',initiative:42,move:0,attack:-1,range:0,shuffle:false},
+  {name:'Stampede',initiative:18,move:2,attack:-1,range:0,shuffle:false},
+  {name:'Gather Strength',selfCondition:'strengthen',initiative:68,move:0,attack:0,range:0,shuffle:true}
+ ]
+};
+const ELEMENT_TYPES=['fire','ice','air','earth','light','dark'];
+const CONDITION_ICONS={poison:'☣',wound:'🩸',immobilize:'⛓',stun:'✦',disarm:'⊘',strengthen:'✚',muddle:'◌'};
+const CONDITIONS=Object.keys(CONDITION_ICONS);
+function conditionLabel(u){return Object.keys(u.conditions||{}).filter(k=>u.conditions[k]).map(k=>CONDITION_ICONS[k]+' '+k).join(' · ')}
+function hasCondition(u,k){return !!u.conditions?.[k]}
+function addCondition(u,k){if(!CONDITIONS.includes(k)||!u||u.hp<=0)return;u.conditions??={};u.conditions[k]=true;log(u.name+' gains '+k+'.')}
+function removeCondition(u,k){if(u.conditions?.[k]){delete u.conditions[k];log(u.name+' loses '+k+'.')}}
+function dealDamage(target,raw){const damage=Math.max(0,raw+(hasCondition(target,'poison')?1:0)-Math.max(0,target.guard||0));target.guard=0;target.hp=Math.max(0,target.hp-damage);if(target.hp===0&&target.id.startsWith('p')){target.exhausted=true;log(target.name+' falls in battle.')}return damage}
+function healUnit(target,amount){let healed=Math.min(target.maxHp-target.hp,Math.max(0,amount));target.hp+=healed;removeCondition(target,'poison');removeCondition(target,'wound');return healed}
+function unitStart(u){if(!u||u.hp<=0)return false;u._turnConditions=Object.keys(u.conditions||{});if(hasCondition(u,'wound')){u.hp=Math.max(0,u.hp-1);log(u.name+' suffers 1 Wound damage.');if(u.hp===0){if(u.id.startsWith('p'))u.exhausted=true;return false}}return true}
+function unitEnd(u){for(const k of u._turnConditions||[])if(!['poison','wound'].includes(k))removeCondition(u,k);delete u._turnConditions}
+function infuse(element){if(!element)return;state.elements[element]=2;log(element.toUpperCase()+' infused (strong).')}
+function consumeElement(element){if(!element||!state.elements[element])return false;state.elements[element]=0;log(element.toUpperCase()+' consumed: +1 action power.');return true}
+function tickElements(){for(const e of ELEMENT_TYPES)state.elements[e]=Math.max(0,state.elements[e]-1)}
+function rollAttack(base,deck,attacker){if(hasCondition(attacker,'strengthen')===hasCondition(attacker,'muddle'))return attackDamage(base,deck);const a=attackDamage(base,deck),b=attackDamage(base,deck),strong=hasCondition(attacker,'strengthen');return (strong?a.damage>=b.damage:a.damage<=b.damage)?{...a,second:b.mod}:{...b,second:a.mod}}
+const BASE_MODIFIERS=[-2,-1,-1,-1,-1,-1,0,0,0,0,0,0,1,1,1,1,1,2,'null','double'];
+const shuffled=a=>{let out=a.slice();for(let i=out.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}return out};
+const freshModifier=()=>({draw:shuffled(BASE_MODIFIERS),discard:[],reshuffle:false});
+const freshMonsterDeck=type=>({draw:shuffled(MONSTER_ABILITIES[type].map((_,i)=>i)),discard:[]});
+function ensureV05(st){
+ st.version=6;
+ st.modifiers??={heroes:st.players.map(()=>freshModifier()),monsters:freshModifier()};
+ st.modifiers.heroes??=st.players.map(()=>freshModifier());
+ while(st.modifiers.heroes.length<st.players.length)st.modifiers.heroes.push(freshModifier());
+ st.modifiers.monsters??=freshModifier();
+ st.monsterDecks??=Object.fromEntries(Object.keys(MONSTER_ABILITIES).map(k=>[k,freshMonsterDeck(k)]));
+ for(let type of Object.keys(MONSTER_ABILITIES))st.monsterDecks[type]??=freshMonsterDeck(type);
+ st.monsterReveals??={};st.elements??=Object.fromEntries(ELEMENT_TYPES.map(x=>[x,0]));for(const e of ELEMENT_TYPES)st.elements[e]??=0;for(const u of [...st.players,...st.enemies])u.conditions??={};if(!st.scenario)st.scenario={kind:'classic'};return st;
+}
+function drawModifier(deck){
+ if(!deck.draw.length){deck.draw=shuffled(deck.discard);deck.discard=[]}
+ if(!deck.draw.length)deck.draw=shuffled(BASE_MODIFIERS);
+ const card=deck.draw.pop();deck.discard.push(card);
+ if(card==='null'||card==='double')deck.reshuffle=true;
+ return card;
+}
+function attackDamage(base,deck){const mod=drawModifier(deck);return {mod,damage:mod==='null'?0:mod==='double'?Math.max(0,base*2):Math.max(0,base+mod)}}
+function modifierLabel(mod){return mod==='null'?'MISS ×0':mod==='double'?'CRITICAL ×2':mod>=0?'+'+mod:String(mod)}
+function drawMonsterAbility(type){const deck=state.monsterDecks[type];if(!deck.draw.length){deck.draw=shuffled(deck.discard);deck.discard=[]}
+ const index=deck.draw.pop(),ability=MONSTER_ABILITIES[type][index];deck.discard.push(index);
+ if(ability.shuffle){deck.draw=shuffled([...deck.draw,...deck.discard]);deck.discard=[]}
+ return {...ability,type};
+}
+function drawRoundMonsters(){state.monsterReveals={};const present=[...new Set(state.enemies.map(e=>e.name))];for(const type of present){const card=drawMonsterAbility(type);state.monsterReveals[type]=card;log(type+' reveals '+card.name+' (initiative '+card.initiative+', Move '+(monsterProfile({name:type}).move+card.move)+', Attack '+(monsterProfile({name:type}).attack+card.attack)+', Range '+(monsterProfile({name:type}).range+card.range)+').')}}
+function cleanupModifiers(){for(const deck of [...state.modifiers.heroes,state.modifiers.monsters])if(deck.reshuffle){deck.draw=shuffled([...deck.draw,...deck.discard]);deck.discard=[];deck.reshuffle=false}}
+const KEY='emberwatch_save_v1';let state=null,seat=0,mode='offline',db=null,roomCode='',roomRef=null,unsubscribe=null,remoteBusy=false,ui={selected:[],initiative:0,actionMode:null,step:0,actions:[],actor:null};const $=x=>document.getElementById(x);const clone=x=>JSON.parse(JSON.stringify(x));const toCube=p=>{const x=p.q-(p.r-(p.r&1))/2,z=p.r;return {x,y:-x-z,z}};const axialDist=(a,b)=>{let A=toCube(a),B=toCube(b);return Math.max(Math.abs(A.x-B.x),Math.abs(A.y-B.y),Math.abs(A.z-B.z))};const tileKey=(q,r)=>q+','+r;const directions=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+// The original Ashen Pass remains supported as a legacy save. New games use the three-chamber Cinder Vault.
+const CHAMBERS=[
+ {name:'Entryway',spawn:[{id:'e0',name:'Ash Raider',hp:6,maxHp:6,q:2,r:0},{id:'e1',name:'Ash Raider',hp:6,maxHp:6,q:2,r:1}]},
+ {name:'Cinder Gallery',spawn:[{id:'e2',name:'Ash Archer',hp:5,maxHp:5,q:5,r:1},{id:'e3',name:'Ash Raider',hp:6,maxHp:6,q:4,r:4}]},
+ {name:'Vault Sanctum',spawn:[{id:'e4',name:'Flame Brute',hp:10,maxHp:10,q:7,r:2},{id:'e5',name:'Ash Archer',hp:5,maxHp:5,q:7,r:4}]}
+];
+const VAULT_DOORS=[{q:3,r:3,reveal:1},{q:6,r:3,reveal:2}];
+function roomOf(q,r){return q<=2?0:q<=5?1:2}
+function doorAt(q,r){return VAULT_DOORS.find(d=>d.q===q&&d.r===r)}
+function discovered(q,r){if(state?.scenario?.kind!=='vault')return true;const door=doorAt(q,r);return door?state.scenario.revealed.includes(door.reveal-1):state.scenario.revealed.includes(roomOf(q,r))}
+function drawRoomEnemies(index){const existing=new Set(state.enemies.map(e=>e.id));const newly=[];for(const e of CHAMBERS[index].spawn){if(!existing.has(e.id)){const unit={...e,conditions:{}};state.enemies.push(unit);newly.push(unit)}}return newly}
+function revealDoor(q,r){if(state.scenario?.kind!=='vault')return;const door=doorAt(q,r);if(!door||state.scenario.revealed.includes(door.reveal))return;
+ state.scenario.revealed.push(door.reveal);const newcomers=drawRoomEnemies(door.reveal);log('Door opened! '+CHAMBERS[door.reveal].name+' revealed; '+newcomers.length+' enemies emerge.');
+ // Newly seen enemy families receive a card, and act near the end of the current round.
+ if(state.phase==='act')for(const type of new Set(newcomers.map(e=>e.name))){if(!state.monsterReveals[type]){const ability=drawMonsterAbility(type);state.monsterReveals[type]=ability;state.order.push({type:'enemy',id:type,initiative:99});log(type+' joins the initiative order at 99 after the door opens.')}}
+}
+function scenarioProgress(unit){if(state.scenario?.kind!=='vault'||!unit?.id?.startsWith('p'))return;
+ if(unit.q===5&&unit.r===0&&!state.scenario.seal){state.scenario.seal=true;log(unit.name+' claims the ✦ Archive Seal.');}
+ if(unit.q===7&&unit.r===5){state.scenario.exitReached=true;log(unit.name+' reaches the extraction rune.');}
+ checkScenarioEnd();
+}
+function checkScenarioEnd(){if(!state||state.winner)return !!state?.winner;
+ if(!state.players.some(p=>p.hp>0&&!p.exhausted)){state.winner='defeat';state.phase='end';log('Defeat. The party falls.');return true}
+ if(state.scenario?.kind==='vault'){
+  const bossAlive=state.enemies.some(e=>e.name==='Flame Brute'&&e.hp>0);
+  if(state.scenario.seal&&state.scenario.exitReached&&state.scenario.revealed.includes(2)&&!bossAlive){state.winner='victory';state.phase='end';log('Victory! The Archive Seal has been extracted after the guardian fell.');return true}
+  return false;
+ }
+ if(state.enemies.length===0){state.winner='victory';state.phase='end';log('Victory! The Ashen Pass is secure.');return true}return false;
+}
+function makeGame(){const players=ROLES.map((r,i)=>({id:'p'+i,name:r.name,maxHp:r.hp,hp:r.hp,q:i===0?0:i===1?1:i===2?0:1,r:i<2?4:5,hand:[0,1,2,3,4,5],discard:[],lost:[],picked:[],ready:false,initChoice:0,guard:0,coins:0,exhausted:false}));
+ const walls=[[3,0],[3,1],[3,2],[3,4],[3,5],[6,0],[6,1],[6,2],[6,4],[6,5]];
+ const st=ensureV05({version:6,scenario:{kind:'vault',revealed:[0],seal:false,exitReached:false},round:1,phase:'plan',players,enemies:CHAMBERS[0].spawn.map(e=>({...e})),rocks:[[1,2],[4,1],[5,4]],walls,difficult:[[1,3],[4,3],[7,3]],loot:[],journal:['The Cinder Vault: enter sealed doors, recover the Archive Seal (5,0), defeat the Flame Brute, and reach the extraction rune (7,5).'],order:[],turnIndex:0,monsterInit:50,actionLog:[],winner:null,rev:0});return st;
+}
+const inside=(q,r)=>q>=0&&q<8&&r>=0&&r<6;
+const contains=(arr,q,r)=>(arr||[]).some(x=>x[0]===q&&x[1]===r);
+const rock=(q,r)=>contains(state.rocks,q,r);
+const wall=(q,r)=>contains(state.walls,q,r);
+const difficult=(q,r)=>contains(state.difficult,q,r);
+const unitAt=(q,r)=>[...state.players.filter(p=>!p.exhausted&&p.hp>0),...state.enemies].find(x=>x.q===q&&x.r===r);
+const free=(q,r)=>inside(q,r)&&discovered(q,r)&&!rock(q,r)&&!wall(q,r)&&!unitAt(q,r);
+const neighbors=(q,r)=>((r&1)?[[1,0],[1,-1],[0,-1],[-1,0],[0,1],[1,1]]:[[1,0],[0,-1],[-1,-1],[-1,0],[-1,1],[0,1]]).map(([dq,dr])=>({q:q+dq,r:r+dr})).filter(p=>inside(p.q,p.r));
+// Movement uses Dijkstra, allowing passage through allies, but never ending on any figure.
+// Jump ignores terrain during intermediate steps; flying also ignores difficult terrain.
+function reachable(unit,n,mode='walk'){
+ const dist=new Map([[tileKey(unit.q,unit.r),0]]), todo=[{q:unit.q,r:unit.r,d:0}], result=[];
+ while(todo.length){todo.sort((a,b)=>a.d-b.d);const t=todo.shift(),key=tileKey(t.q,t.r);if(t.d!==dist.get(key))continue;
+ if(t.d>0&&!unitAt(t.q,t.r)&&!wall(t.q,t.r)&&!rock(t.q,t.r)&&discovered(t.q,t.r))result.push(t);
+ for(const next of neighbors(t.q,t.r)){
+  if(!discovered(next.q,next.r))continue;const occupant=unitAt(next.q,next.r),isWall=wall(next.q,next.r),isRock=rock(next.q,next.r);
+  if(mode==='walk'&&(isWall||isRock||occupant?.id?.startsWith('e')))continue;
+  const cost=1+(mode==='walk'&&difficult(next.q,next.r)?1:0),d=t.d+cost,k=tileKey(next.q,next.r);
+  if(d<=n&&d<(dist.get(k)??Infinity)){dist.set(k,d);todo.push({...next,d})}
+ }
+ }
+ return result;
+}
+// A wall occupies an entire hex. Test open segment interiors rather than treating rocks as opaque.
+function inHexInterior(p,q,r){const [x,y]=hx(q,r),v=Array.from({length:6},(_,i)=>{const a=Math.PI/3*i+Math.PI/6;return [x+49*Math.cos(a),y+49*Math.sin(a)]});let sign=0;for(let i=0;i<6;i++){const a=v[i],b=v[(i+1)%6],cross=(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);if(Math.abs(cross)<0.0001)continue;if(sign&&sign*cross<0)return false;sign=Math.sign(cross)}return true}
+function segmentHitsWall(a,b,q,r){for(let k=1;k<100;k++){const t=k/100,p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];if(inHexInterior(p,q,r))return true}return false}
+function lineOfSight(from,to){if(axialDist(from,to)<=1)return true;const walls=state.walls||[];if(!walls.length)return true;
+ const [ax,ay]=hx(from.q,from.r),[bx,by]=hx(to.q,to.r);
+ // A clear line between any pair of non-wall hex corners establishes sight.
+ for(let i=0;i<6;i++)for(let j=0;j<6;j++){
+  let ai=Math.PI/3*i+Math.PI/6,bj=Math.PI/3*j+Math.PI/6;
+  let a=[ax+48.5*Math.cos(ai),ay+48.5*Math.sin(ai)],b=[bx+48.5*Math.cos(bj),by+48.5*Math.sin(bj)];
+  if(walls.every(w=>(w[0]===from.q&&w[1]===from.r)||(w[0]===to.q&&w[1]===to.r)||!segmentHitsWall(a,b,w[0],w[1])))return true;
+ }
+ return false;
+}
+function targets(unit,range,kind){return(kind==='heal'?state.players.filter(p=>p.hp>0&&!p.exhausted):state.enemies).filter(x=>discovered(x.q,x.r)&&axialDist(unit,x)<=range&&lineOfSight(unit,x))}
+function log(t){state.journal.unshift('R'+state.round+' · '+t);state.journal=state.journal.slice(0,100)}function current(){return state.order[state.turnIndex]||null}function currentPlayer(){let c=current();return c?.type==='player'?state.players[c.id]:null}
+async function commit(){if(!state)return;state.rev++;localStorage.setItem(KEY,JSON.stringify(state));if(mode==='online'&&db&&roomRef&&!remoteBusy){try{await window.fbSet(roomRef,clone(state))}catch(e){$('netStatus').textContent='Sync failed: '+e.message}}render()}
+function resetUI(){ui={selected:[],initiative:0,actionMode:null,step:0,actions:[],actor:null}}
+function setupLocal(){mode='offline';seat=0;roomCode='';if(unsubscribe){unsubscribe();unsubscribe=null}db=null;state=makeGame();resetUI();$('overlay').style.display='none';commit()}
+function resetGame(){if(!confirm('Reset the shared scenario for everyone in this room?'))return;state=makeGame();resetUI();commit()}
+function hx(q,r){return [76+q*88+(r%2)*44,64+r*88]};function vertexes(x,y,r=49){return Array.from({length:6},(_,i)=>{let a=Math.PI/3*i+Math.PI/6;return(x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ')}
+function drawBoard(){const svg=$('board');let out='';for(let r=0;r<6;r++)for(let q=0;q<8;q++){
+ let [x,y]=hx(q,r),visible=discovered(q,r),blocked=rock(q,r),isWall=wall(q,r),isDifficult=difficult(q,r),u=visible?unitAt(q,r):null,loot=visible&&state.loot.some(t=>t[0]===q&&t[1]===r),selected=visible&&ui.actionMode&&ui.actionMode.valid?.some(v=>v.q===q&&v.r===r),door=doorAt(q,r),seal=state.scenario?.kind==='vault'&&q===5&&r===0,exit=state.scenario?.kind==='vault'&&q===7&&r===5;
+ let fill=!visible?'#0d1922':isWall?'#181e29':blocked?'#374248':selected?'#526b58':door?'#725832':isDifficult?'#8a6b3d':((q+r)%2?'#40565b':'#344c53');out+=`<polygon class="tile ${selected?'selected':''}" points="${vertexes(x,y)}" fill="${fill}" data-q="${q}" data-r="${r}"/>`;
+ if(!visible){out+=`<text x="${x}" y="${y+6}" font-size="20" fill="#3b535e" text-anchor="middle" pointer-events="none">?</text>`;continue}
+ if(door)out+=`<text x="${x}" y="${y+9}" font-size="29" fill="#f0bd69" text-anchor="middle" pointer-events="none">${state.scenario.revealed.includes(door.reveal)?'⌁':'🔒'}</text>`;
+ if(isWall)out+=`<text x="${x}" y="${y+9}" font-size="32" fill="#c4b5a2" text-anchor="middle" pointer-events="none">▰</text>`;
+ if(blocked)out+=`<text x="${x}" y="${y+8}" font-size="32" fill="#899498" text-anchor="middle" pointer-events="none">◆</text>`;
+ if(seal)out+=`<text x="${x}" y="${y+8}" font-size="27" fill="#fada83" text-anchor="middle" pointer-events="none">${state.scenario.seal?'✓':'✦'}</text>`;
+ if(exit)out+=`<text x="${x}" y="${y+10}" font-size="28" fill="#9de6cb" text-anchor="middle" pointer-events="none">⬡</text>`;
+ if(loot)out+=`<text x="${x}" y="${y+23}" font-size="16" text-anchor="middle" pointer-events="none">🪙</text>`;
+ if(u){let pi=state.players.findIndex(p=>p.id===u.id),color=pi>=0?COLORS[pi]:'#dc7b70';out+=`<circle class="unit" cx="${x}" cy="${y}" r="29" fill="${color}"/><text class="unit-label" x="${x}" y="${y}">${pi>=0?pi+1:u.name==='Flame Brute'?'B':u.name==='Ash Archer'?'A':'E'}</text><text class="hp" x="${x}" y="${y+40}">${u.hp}/${u.maxHp}</text><text class="hp" x="${x}" y="${y-32}" font-size="10">${esc(Object.keys(u.conditions||{}).map(c=>CONDITION_ICONS[c]).join(''))}</text>`}
+ out+=`<text class="coord" x="${x-32}" y="${y-30}">${q},${r}</text>`}
+ svg.innerHTML=out;svg.querySelectorAll('polygon').forEach(p=>p.addEventListener('click',()=>clickHex(+p.dataset.q,+p.dataset.r)))}
+function myTurn(){return mode==='offline'||seat===state.order[state.turnIndex]?.id}function canPlan(p){return mode==='offline'||seat===state.players.indexOf(p)}
+function clickHex(q,r){if(!state||state.phase!=='act'||!myTurn()||!ui.actionMode)return;const a=ui.actionMode,actor=currentPlayer();if(!actor)return;let valid=a.valid.find(x=>x.q===q&&x.r===r);if(!valid)return;if(a.kind==='move'){actor.q=q;actor.r=r;let idx=state.loot.findIndex(l=>l[0]===q&&l[1]===r);if(idx>=0){actor.coins++;state.loot.splice(idx,1);log(actor.name+' collects a coin.')}log(actor.name+' moves to '+q+','+r);revealDoor(q,r);scenarioProgress(actor)}else if(a.kind==='attack'){const target=state.enemies.find(e=>e.q===q&&e.r===r);if(!target)return;const roll=rollAttack(a.value,state.modifiers.heroes[state.players.indexOf(actor)],actor);const damage=dealDamage(target,roll.damage);log(actor.name+' attacks '+target.name+' for '+damage+' ('+modifierLabel(roll.mod)+(roll.second!==undefined?' vs '+modifierLabel(roll.second):'')+').');if(a.condition&&roll.mod!=='null'&&target.hp>0)addCondition(target,a.condition);if(target.hp<=0){state.enemies=state.enemies.filter(e=>e!==target);state.loot.push([q,r]);log(target.name+' defeated!')}}else if(a.kind==='heal'){const target=state.players.find(p=>p.q===q&&p.r===r);if(!target)return;let healed=healUnit(target,a.value);log(actor.name+' restores '+healed+' HP to '+target.name)}if(a.infuse)infuse(a.infuse);finishAction()}
+function selectCard(idx){if(state.phase!=='plan')return;const p=state.players[seat];if(!canPlan(p)||p.ready||!p.hand.includes(idx))return;let sel=ui.selected;if(sel.includes(idx))sel=sel.filter(n=>n!==idx);else if(sel.length<2)sel=[...sel,idx];else sel=[sel[1],idx];ui.selected=sel;ui.initiative=0;render()}
+function ready(){const p=state.players[seat];if(!canPlan(p)||p.ready)return;if(p.hand.length<2){log(p.name+' must recover cards first.');commit();return}if(ui.selected.length!==2)return;p.picked=ui.selected.slice();p.initChoice=ui.initiative;p.ready=true;resetUI();if(mode==='offline'){let next=state.players.findIndex((x,i)=>!x.ready&&!x.exhausted&&x.hp>0);if(next>=0)seat=next}if(state.players.filter(x=>x.hp>0&&!x.exhausted).every(x=>x.ready))beginRound();else commit()}
+function shortRest(){const p=state.players[seat];if(state.phase!=='plan'||!canPlan(p)||p.ready||p.discard.length===0)return;const lost=p.discard.splice(Math.floor(Math.random()*p.discard.length),1)[0];p.lost.push(lost);p.hand.push(...p.discard);p.discard=[];log(p.name+' short rests, permanently losing '+CARD_LIBRARY[seat][lost].n+'.');commit()}
+function beginRound(){state.phase='act';drawRoundMonsters();state.order=state.players.map((p,i)=>({type:'player',id:i,initiative:p.picked.length?CARD_LIBRARY[i][p.picked[p.initChoice]].i:99})).filter(x=>!state.players[x.id].exhausted&&state.players[x.id].hp>0);for(const [type,ability] of Object.entries(state.monsterReveals))state.order.push({type:'enemy',id:type,initiative:ability.initiative});state.order.sort((a,b)=>a.initiative-b.initiative||(a.type==='player'&&b.type!=='player'?-1:a.type!=='player'&&b.type==='player'?1:0));state.turnIndex=0;resetUI();log('Initiative order: '+state.order.map(x=>x.type==='enemy'?x.id+' '+x.initiative:state.players[x.id].name+' '+x.initiative).join(' → '));advanceAutomated()}
+function advanceAutomated(){if(checkScenarioEnd()){state.phase='end';commit();return}if(state.turnIndex>=state.order.length){finishRound();return}let c=current();if(c.type==='enemy'){enemyTurn(c.id);state.turnIndex++;advanceAutomated();return}let actor=state.players[c.id];if(actor.hp<=0||actor.exhausted){state.turnIndex++;advanceAutomated();return}if(!unitStart(actor)){log(actor.name+' cannot act.');state.turnIndex++;advanceAutomated();return}if(hasCondition(actor,'stun')){log(actor.name+' is stunned and loses the turn.');unitEnd(actor);state.turnIndex++;advanceAutomated();return}ui.actor=c.id;ui.actions=[];ui.actionMode=null;ui.step=0;if(mode==='offline')seat=c.id;commit()}
+function finishRound(){for(let [i,p] of state.players.entries()){for(let idx of p.picked){p.hand=p.hand.filter(x=>x!==idx);p.discard.push(idx)}p.picked=[];p.ready=false;p.guard=0;if(p.hand.length<2){if(p.discard.length){let lost=p.discard.splice(Math.floor(Math.random()*p.discard.length),1)[0];p.lost.push(lost);p.hand.push(...p.discard);p.discard=[];log(p.name+' recovers cards and loses '+CARD_LIBRARY[i][lost].n+'.')}if(p.hand.length<2){p.exhausted=true;log(p.name+' is exhausted.')}}}cleanupModifiers();tickElements();state.monsterReveals={};state.round++;state.phase='plan';state.order=[];state.turnIndex=0;resetUI();if(mode==='offline'){let first=state.players.findIndex(p=>!p.exhausted&&p.hp>0);seat=Math.max(0,first)}commit()}
+// Monster automation v0.3: move-through-friendly, weighted shortest paths,
+// focus by shortest route to an attack hex, proximity and character initiative.
+const monsterProfile=e=>e.name==='Flame Brute'?{move:1,range:1,attack:3}:e.name==='Ash Archer'?{move:2,range:3,attack:2}:{move:2,range:1,attack:2};
+function monsterRoutes(monster){
+ const start=tileKey(monster.q,monster.r),best=new Map([[start,0]]),paths=new Map([[start,[{q:monster.q,r:monster.r}]]]),queue=[{q:monster.q,r:monster.r,cost:0}];
+ while(queue.length){queue.sort((a,b)=>a.cost-b.cost||a.r-b.r||a.q-b.q);const here=queue.shift(),hereKey=tileKey(here.q,here.r);if(here.cost!==best.get(hereKey))continue;
+  for(const next of neighbors(here.q,here.r)){
+   if(!discovered(next.q,next.r)||wall(next.q,next.r)||rock(next.q,next.r))continue;
+   // Monsters can travel through other monsters but not through characters.
+   if(state.players.some(p=>p.hp>0&&!p.exhausted&&p.q===next.q&&p.r===next.r))continue;
+   const cost=here.cost+(difficult(next.q,next.r)?2:1),k=tileKey(next.q,next.r);
+   if(cost<(best.get(k)??Infinity)){best.set(k,cost);paths.set(k,[...paths.get(hereKey),next]);queue.push({...next,cost})}
+  }
+ }
+ return {best,paths};
+}
+function characterInitiative(p){const c=state.order.find(x=>x.type==='player'&&state.players[x.id]?.id===p.id);return c?.initiative??99}
+function monsterPlan(monster){
+ const base=monsterProfile(monster),ability=state.monsterReveals?.[monster.name]||{move:0,attack:0,range:0};const spec={move:Math.max(0,base.move+ability.move),attack:Math.max(0,base.attack+ability.attack),range:Math.max(1,base.range+ability.range)},routes=monsterRoutes(monster),characters=state.players.filter(p=>p.hp>0&&!p.exhausted);
+ if(!characters.length)return null;
+ // Find reachable unoccupied hexes from which each potential focus can be attacked.
+ // In range but behind a wall is not an attack position.
+ const candidates=[];
+ for(const target of characters){let attackPoints=[];
+  for(const [k,cost] of routes.best){let [q,r]=k.split(',').map(Number),pos={q,r},occupant=unitAt(q,r);
+   if(occupant&&occupant!==monster)continue;
+   if(axialDist(pos,target)>spec.range||axialDist(pos,target)===0||!lineOfSight(pos,target))continue;
+   attackPoints.push({pos,cost,dist:axialDist(monster,target),init:characterInitiative(target),target});
+  }
+  attackPoints.sort((a,b)=>a.cost-b.cost||a.pos.r-b.pos.r||a.pos.q-b.pos.q);
+  if(attackPoints.length)candidates.push(attackPoints[0]);
+ }
+ if(!candidates.length)return {spec,routes,target:null,goal:null,path:[]};
+ candidates.sort((a,b)=>a.cost-b.cost||a.dist-b.dist||a.init-b.init||state.players.indexOf(a.target)-state.players.indexOf(b.target));
+ const chosen=candidates[0],path=routes.paths.get(tileKey(chosen.pos.q,chosen.pos.r))||[];
+ // Follow the path up to movement allowance; do not stop on other monsters.
+ let stop={q:monster.q,r:monster.r},spent=0;
+ for(let i=1;i<path.length;i++){
+  const step=path[i],price=difficult(step.q,step.r)?2:1;
+  if(spent+price>spec.move)break;spent+=price;
+  if(!unitAt(step.q,step.r))stop=step;
+ }
+ return {spec,routes,target:chosen.target,goal:chosen.pos,path,stop,spent};
+}
+function enemyTurn(type){
+ const revealed=state.monsterReveals[type];log(type+' acts: '+revealed.name+' (initiative '+revealed.initiative+').');
+ for(const enemy of [...state.enemies].filter(e=>e.name===type)){
+  if(!unitStart(enemy)){log(enemy.name+' dies from Wound.');state.enemies=state.enemies.filter(e=>e!==enemy);state.loot.push([enemy.q,enemy.r]);continue}const plan=monsterPlan(enemy);if(!plan){unitEnd(enemy);continue}if(hasCondition(enemy,'stun')){log(enemy.name+' is stunned and misses its turn.');unitEnd(enemy);continue}if(revealed.selfCondition)addCondition(enemy,revealed.selfCondition);
+  if(!plan.target){log(enemy.name+' has no reachable attack position.');unitEnd(enemy);continue}
+  if(plan.stop&&(plan.stop.q!==enemy.q||plan.stop.r!==enemy.r)){
+   const prev=tileKey(enemy.q,enemy.r);enemy.q=plan.stop.q;enemy.r=plan.stop.r;
+   log(enemy.name+' moves '+prev+' → '+tileKey(enemy.q,enemy.r)+' toward '+plan.target.name+'.');
+  }
+  const target=plan.target;
+  if(target.hp>0&&axialDist(enemy,target)<=plan.spec.range&&lineOfSight(enemy,target)){
+   const roll=attackDamage(plan.spec.attack,state.modifiers.monsters);const dealt=Math.max(0,roll.damage-target.guard);target.guard=0;target.hp=Math.max(0,target.hp-dealt);
+   log(enemy.name+' attacks '+target.name+' at range '+axialDist(enemy,target)+' for '+dealt+' ('+modifierLabel(roll.mod)+' modifier).');
+   if(target.hp===0){target.exhausted=true;log(target.name+' falls in battle.')}
+  }else log(enemy.name+' prepares an attack on '+target.name+' (not yet in range/LOS).');
+ }
+}
+function offerAction(which,asBasic=false){if(state.phase!=='act'||!myTurn()||ui.actionMode||ui.actions.includes(which))return;let actor=currentPlayer(),idx=actor.picked[which==='top'?0:1];if(idx===undefined)return;let data=asBasic?(which==='top'?['attack',2,1]:['move',2]):CARD_LIBRARY[state.order[state.turnIndex].id][idx][which==='top'?'t':'b'];const [rawKind,value,range]=data;const kind=['jump','fly'].includes(rawKind)?'move':rawKind;const movementMode=['jump','fly'].includes(rawKind)?rawKind:'walk';const card=asBasic?{}:CARD_LIBRARY[state.order[state.turnIndex].id][idx];const empower=card.consume&&consumeElement(card.consume)?1:0;const power=value+empower;if(kind==='guard'){actor.guard+=power;log(actor.name+' gains '+power+' Guard.');if(card.infuse)infuse(card.infuse);ui.actions.push(which);commit();return}if(kind==='attack'&&hasCondition(actor,'disarm')){log(actor.name+' is disarmed and cannot attack.');ui.actions.push(which);commit();return}if(kind==='move'&&hasCondition(actor,'immobilize')){log(actor.name+' is immobilized and cannot move.');ui.actions.push(which);commit();return}let valid=kind==='move'?reachable(actor,power,movementMode):targets(actor,range,kind);if(kind==='heal'&&valid.length===0){ui.actions.push(which);commit();return}ui.actionMode={kind,value:power,range,movementMode,which,condition:card.condition,infuse:card.infuse,valid:valid.map(x=>({q:x.q,r:x.r}))};render()}
+function finishAction(){ui.actions.push(ui.actionMode.which);ui.actionMode=null;commit()}
+function skipAction(which){if(!ui.actions.includes(which)&&myTurn()&&state.phase==='act'){ui.actions.push(which);ui.actionMode=null;commit()}}
+function endTurn(){if(state.phase!=='act'||!myTurn()||!currentPlayer())return;if(ui.actionMode){ui.actions.push(ui.actionMode.which);ui.actionMode=null}unitEnd(currentPlayer());state.turnIndex++;resetUI();advanceAutomated()}
+function render(){if(!state)return;$('roomLabel').textContent=roomCode?'Room '+roomCode:'';$('netStatus').textContent=mode==='online'?'Online · seat '+(seat+1):'Offline · hot-seat';$('scenario').textContent=state.scenario?.kind==='vault'?'The Cinder Vault':'The Ashen Pass (legacy)';$('objectives').innerHTML=state.scenario?.kind==='vault'?`<div class="reveal"><strong>Rooms</strong><div class="help">${state.scenario.revealed.length}/3 revealed</div></div><div class="reveal"><strong>Archive Seal</strong><div class="help">${state.scenario.seal?'✓ Retrieved':'✦ Find at 5,0'}</div></div><div class="reveal"><strong>Guardian</strong><div class="help">${!state.scenario.revealed.includes(2)?'Unrevealed':state.enemies.some(e=>e.name==='Flame Brute')?'Alive':'✓ Defeated'}</div></div><div class="reveal"><strong>Extraction</strong><div class="help">${state.scenario.exitReached?'✓ Reached':'↗ Reach 7,5'}</div></div>`:'<div class="help">Defeat all remaining enemies.</div>';$('phaseInfo').textContent=state.winner?(state.winner==='victory'?'VICTORY':'DEFEAT'):'Round '+state.round+' · '+(state.phase==='plan'?'Secret card planning':'Initiative '+(current()?.initiative??''));$('elements').innerHTML=ELEMENT_TYPES.map(e=>`<div class="reveal"><strong>${e.toUpperCase()}</strong><div class="help">${state.elements?.[e]===2?'● Strong':state.elements?.[e]===1?'◐ Waning':'○ Inert'}</div></div>`).join('');$('monsterCards').innerHTML=Object.values(state.monsterReveals||{}).map(c=>`<div class="reveal"><strong>${esc(c.type)} · ${esc(c.name)}</strong> <span class="init">⚡${c.initiative}</span><div class="help">Move ${Math.max(0,monsterProfile({name:c.type}).move+c.move)} · Attack ${Math.max(0,monsterProfile({name:c.type}).attack+c.attack)} · Range ${Math.max(1,monsterProfile({name:c.type}).range+c.range)}${c.condition?' · '+c.condition:''}${c.selfCondition?' · '+c.selfCondition+' self':''}</div></div>`).join('')||'<div class="help">Monster abilities are revealed when all heroes are ready.</div>';$('log').innerHTML=state.journal.map(x=>'<div>'+esc(x)+'</div>').join('');drawBoard();$('party').innerHTML=state.players.map((p,i)=>`<div class="character ${(state.phase==='plan'&&seat===i||state.phase==='act'&&current()?.id===i&&current()?.type==='player')?'current':''}"><div class="charhead"><strong style="color:${COLORS[i]}">${i+1}. ${p.name}</strong><span>${p.hp>0?`♥ ${p.hp}/${p.maxHp}`:'☠ Down'}</span></div><div class="stats">${p.ready?'✓ Ready':p.exhausted?'Exhausted':'Planning'} · Hand ${p.hand.length} · Discard ${p.discard.length} · Lost ${p.lost.length} · 🪙 ${p.coins} ${p.guard?'· Guard '+p.guard:''}<div class="help">${esc(conditionLabel(p))}</div></div></div>`).join('');let a=$('actionUI');if(state.phase==='end'){a.innerHTML=`<h2>${state.winner==='victory'?'Mission accomplished!':'Party defeated'}</h2><p>Rounds survived: ${state.round}. Coins: ${state.players.reduce((s,p)=>s+p.coins,0)}.</p><button id="again" class="primary">Play again</button>`;$('again').onclick=resetGame;return}if(state.phase==='plan'){let p=state.players[seat];if(mode==='online'&&p.ready){a.innerHTML='<h3>Waiting for other players…</h3><p>Each player secretly selects two cards.</p>';return}if(p.exhausted){a.innerHTML='<h3>This character is exhausted.</h3>';return}a.innerHTML=`<h3>${mode==='offline'?'Hot-seat · ':''}${p.name}: choose two cards</h3><p class="help">First selected card provides the top action; second selected card provides the bottom action. Choose which provides initiative. (Prototype simplification: card-to-action assignment is fixed by selection order.)</p><div class="cards">${p.hand.map(idx=>{let c=CARD_LIBRARY[seat][idx];return `<button class="ability ${ui.selected.includes(idx)?'selected':''}" data-card="${idx}"><span><strong>${esc(c.n)}</strong> <span class="init">⚡${c.i}</span></span><span class="ability-text">▲ ${describe(c.t)}<br>▼ ${describe(c.b)}${c.condition?' · '+c.condition:''}${c.infuse?' · infuse '+c.infuse:''}${c.consume?' · consume '+c.consume+' (+1)':''}</span><span class="tag">${ui.selected.indexOf(idx)===0?'TOP CARD':ui.selected.indexOf(idx)===1?'BOTTOM CARD':'Choose'}</span></button>`}).join('')}</div><div class="section"><div class="controls"><label>Initiative from <select id="initChoice"><option value="0">Top card</option><option value="1">Bottom card</option></select></label><button id="ready" class="primary" ${ui.selected.length!==2?'disabled':''}>Lock in cards</button><button id="rest" ${p.discard.length?'':'disabled'}>Short rest</button></div></div>`;a.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>selectCard(+b.dataset.card));$('initChoice').value=String(ui.initiative);$('initChoice').onchange=e=>ui.initiative=+e.target.value;$('ready').onclick=ready;$('rest').onclick=shortRest;return}
+let c=current();if(c?.type!=='player'){a.innerHTML='<h3>Enemies acting…</h3>';return}let p=state.players[c.id];if(!myTurn()){a.innerHTML=`<h3>Waiting for ${p.name}</h3><p>Initiative ${c.initiative}</p>`;return}let cards=p.picked.map(idx=>CARD_LIBRARY[c.id][idx]);a.innerHTML=`<h3>${p.name}'s turn · Initiative ${c.initiative}</h3><p class="help">Each of your two actions can be used once. Resolve them in either order. Guard reduces the next incoming hit.</p><div class="cards">${cards.map((cd,i)=>`<div class="ability"><strong>${esc(cd.n)} ⚡${cd.i}</strong><span class="ability-text">${i===0?'▲ '+describe(cd.t):'▼ '+describe(cd.b)}${cd.condition?' · '+cd.condition:''}${cd.infuse?' · infuse '+cd.infuse:''}${cd.consume?' · consume '+cd.consume+' (+1)':''}</span><div class="controls"><button class="small" data-do="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')||ui.actionMode?'disabled':''}>Use</button><button class="small" data-basic="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')||ui.actionMode?'disabled':''}>Basic</button><button class="small" data-skip="${i===0?'top':'bottom'}" ${ui.actions.includes(i===0?'top':'bottom')?'disabled':''}>Skip</button></div></div>`).join('')}</div>${ui.actionMode?`<p class="status">Select a highlighted hex for ${ui.actionMode.kind} ${ui.actionMode.value}. ${ui.actionMode.valid.length?'':'No eligible hexes. Skip this action.'}</p><button id="cancelTarget">Cancel / skip target</button>`:''}<div class="section"><button id="endTurn" class="primary">End turn</button></div>`;a.querySelectorAll('[data-do]').forEach(b=>b.onclick=()=>offerAction(b.dataset.do));a.querySelectorAll('[data-basic]').forEach(b=>b.onclick=()=>offerAction(b.dataset.basic,true));a.querySelectorAll('[data-skip]').forEach(b=>b.onclick=()=>skipAction(b.dataset.skip));if($('cancelTarget'))$('cancelTarget').onclick=()=>{ui.actions.push(ui.actionMode.which);ui.actionMode=null;render()};$('endTurn').onclick=endTurn}
+function describe(a){return ['move','jump','fly'].includes(a[0])?(a[0]==='jump'?'Jump ':a[0]==='fly'?'Fly ':'Move ')+a[1]:a[0]==='guard'?'Guard '+a[1]:a[0]==='heal'?'Heal '+a[1]+' · range '+a[2]:'Attack '+a[1]+' · range '+a[2]}
+function esc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showSetup(){const over=$('overlay');over.style.display='flex';over.innerHTML=`<div class="modal"><h2>Emberwatch · Game room</h2><p>Play four characters on one device, or each player joins the same shared room through Firebase Realtime Database. The Firebase configuration stays in each browser's local storage; Firebase security rules must be deployed separately.</p><h3>Offline</h3><button id="local">New local hot-seat game</button><div class="section"><h3>Online multiplayer</h3><p class="help">Create a Firebase project, enable <b>Realtime Database</b> and <b>Anonymous Authentication</b>, copy the web app's Firebase configuration JSON and deploy the included database rules.</p><textarea id="config" rows="6" style="width:100%" placeholder='Paste Firebase web configuration JSON, e.g. {"apiKey":"...","authDomain":"...","databaseURL":"...","projectId":"...","appId":"..."}'></textarea><div class="settings"><label>Room code<br><input id="room" maxlength="10" placeholder="ASHEN123" style="width:100%"></label><label>Claim seat<br><select id="seat" style="width:100%"><option value="0">1 · Vanguard</option><option value="1">2 · Wayfinder</option><option value="2">3 · Runesmith</option><option value="3">4 · Warden</option></select></label></div><div class="controls" style="margin-top:10px"><button id="create" class="primary">Create online room</button><button id="join">Join existing room</button></div><p id="setupMsg" class="status"></p></div><div class="section"><button id="close">Close</button></div></div>`;$('config').value=localStorage.getItem('emberwatch_firebase_config')||'';$('room').value=roomCode||Math.random().toString(36).slice(2,8).toUpperCase();$('seat').value=String(seat);$('local').onclick=setupLocal;$('close').onclick=()=>over.style.display='none';$('create').onclick=()=>connect(true);$('join').onclick=()=>connect(false)}
+async function connect(create){const msg=$('setupMsg');try{const cfg=JSON.parse($('config').value);if(!cfg.databaseURL||!cfg.apiKey||!cfg.projectId)throw Error('Firebase configuration requires databaseURL, apiKey and projectId.');const code=$('room').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'');if(code.length<4)throw Error('Room code must have at least 4 characters.');const wanted=+$('seat').value;msg.textContent='Connecting…';const appmod=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),authmod=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),datamod=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js');const app=appmod.getApps().find(a=>a.name==='emberwatch')||appmod.initializeApp(cfg,'emberwatch');const auth=authmod.getAuth(app);await authmod.signInAnonymously(auth);db=datamod.getDatabase(app);window.fbSet=datamod.set;const root=datamod.ref(db,'rooms/'+code),snap=await datamod.get(root);if(create&&snap.exists())throw Error('Room already exists. Choose a different code.');if(!create&&!snap.exists())throw Error('Room not found. Ask the host for their room code.');if(create)await datamod.set(root,makeGame());const claim=datamod.ref(db,'seats/'+code+'/'+wanted),uid=auth.currentUser.uid;const tx=await datamod.runTransaction(claim,x=>x===null||x.uid===uid?{uid,joined:Date.now()}:undefined,{applyLocally:false});if(!tx.committed)throw Error('Seat already claimed by another browser. Select a free seat.');if(unsubscribe)unsubscribe();mode='online';seat=wanted;roomCode=code;roomRef=root;localStorage.setItem('emberwatch_firebase_config',JSON.stringify(cfg));unsubscribe=datamod.onValue(root,snap=>{if(!snap.exists())return;remoteBusy=true;state=ensureV05(snap.val());resetUI();remoteBusy=false;render()});$('overlay').style.display='none';render()}catch(e){msg.textContent='Cannot connect: '+e.message;console.error(e)}}
+function copySave(){if(!state)return;const s=JSON.stringify(state);navigator.clipboard?.writeText(s).then(()=>alert('Save copied to clipboard.')).catch(()=>prompt('Copy save JSON:',s))||prompt('Copy save JSON:',s)}function importSave(){let txt=prompt('Paste a previously exported Emberwatch save JSON:');if(!txt)return;try{let obj=JSON.parse(txt);if(!obj.players||!obj.enemies||!obj.phase)throw Error('Not a valid save');state=ensureV05(obj);resetUI();commit()}catch(e){alert('Import failed: '+e.message)}}
+window.showSetup=showSetup;window.resetGame=resetGame;window.copySave=copySave;window.importSave=importSave;const saved=localStorage.getItem(KEY);try{state=saved?ensureV05(JSON.parse(saved)):makeGame();if(!state.players||!state.enemies)throw Error('invalid');state.walls??=[[3,2],[4,4]];state.difficult??=[[1,3],[4,1],[5,3]]}catch{state=makeGame()}render();if(!saved)showSetup();
