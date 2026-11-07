@@ -335,10 +335,31 @@ assert.deepEqual(JSON.parse(JSON.stringify(repeatedAttacks)),repeatedAttacks);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'attack',value:4,range:1},{type:'attack',value:2}
 ],{targetId:'e0'}),/Invalid repeated Attack/);
+const interleaved=abilities.compileHeroQueue('p0',attackAction,[
+ {type:'attack',value:4,range:1},
+ {type:'shield',value:1,duration:'round',optional:true},
+ {type:'attack',value:2,range:1},
+ {type:'retaliate',value:1,duration:'round'}
+],{targetId:'e0'});
+assert.deepEqual(interleaved[0].action.postAttackSteps,[
+ {type:'shield',value:1,duration:'round',optional:true},
+ {type:'attack',value:2,range:1},
+ {type:'retaliate',value:1,duration:'round'}
+]);
+const continuation=abilities.compileAttackContinuation('p0',interleaved[0].action);
+assert.deepEqual(continuation.map(event=>event.type),[
+ 'heroAbilityEffect','heroAttackTargetChoice']);
+assert.equal(continuation[0].effect.optional,true);
+assert.equal(continuation[1].effect.value,2);
+assert.deepEqual(continuation[1].action.postAttackSteps,[
+ {type:'retaliate',value:1,duration:'round'}]);
+assert.deepEqual(JSON.parse(JSON.stringify(continuation)),continuation);
+assert.deepEqual(abilities.compileAttackContinuation('p0',continuation[1].action)
+ .map(event=>event.type),['heroAbilityEffect','heroActionComplete']);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
- {type:'attack',value:4,range:1},{type:'shield',value:1},
+ {type:'attack',value:4,range:1},{type:'heal',value:1,range:2,optional:true},
  {type:'attack',value:2,range:1}
-],{targetId:'e0'}),/Repeated attacks must be consecutive/);
+],{targetId:'e0'}),/Only defensive self effects may separate repeated attacks/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'attack',value:4,range:1},{type:'attack',value:2,range:1},
  {type:'attack',value:2,range:1},{type:'attack',value:2,range:1}
