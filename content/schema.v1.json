@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Emberwatch Tactical Content Package v1",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "version",
+    "license",
+    "spoilerLevel",
+    "cards"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "kind": {
+      "enum": [
+        "class",
+        "monster"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string"
+    },
+    "spoilerLevel": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "handSize": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "initiative"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "initiative": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "top": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ability"
+            }
+          },
+          "bottom": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ability"
+            }
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ability"
+            }
+          },
+          "shuffle": {
+            "type": "boolean"
+          },
+          "loss": {
+            "type": "boolean"
+          },
+          "persistent": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ability": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "range": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "targets": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "condition": {
+          "type": "string"
+        },
+        "element": {
+          "type": "string"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ability"
+          }
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "loss": {
+          "type": "boolean"
+        },
+        "duration": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
