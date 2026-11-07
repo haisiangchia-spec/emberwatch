@@ -107,6 +107,19 @@
       !Number.isFinite(value)||value<0)throw Error('Invalid heal input');
    return Math.max(0,Math.min(value,unit.maxHp-unit.hp));
  }
+ // Convert existing demo-card hit metadata to ordered executable linked steps.
+ // A miss suppresses condition application, not the separate hit event.
+ function linkedAttackSteps(action){
+   if(!action||typeof action!=='object')throw Error('Invalid linked attack');
+   const steps=[];
+   if(action.condition)steps.push({type:'condition',condition:action.condition});
+   if(!action.asBasic&&action.followupType){
+     if(!['push','pull'].includes(action.followupType))
+       throw Error('Unsupported linked movement: '+action.followupType);
+     steps.push({type:action.followupType,value:1});
+   }
+   return steps;
+ }
  function beginSequence(state,actorId,steps){
    validate(state,actorId,steps);
    return {state:copy(state),cursor:{actorId,steps:copy(steps),index:0,events:[]},done:false};
@@ -232,5 +245,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,healAmount,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
