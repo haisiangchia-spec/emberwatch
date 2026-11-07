@@ -2484,3 +2484,32 @@ test('F2 optional condition revalidates enemy target after reload',async ({page}
  expect(st.players[0].guard).toBe(3);
  expect(errors).toEqual([]);
 });
+
+
+test('F2 structured Warden card compiles to persisted Guard then optional Heal',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:3,initiative:63}];s.turnIndex=0;
+  s.players[3].picked=[0,1];s.players[3].guard=0;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ const snapshot=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(snapshot.combatQueue.events.map(e=>e.type)).toEqual([
+   'heroGuard','heroAbilityEffect','heroActionComplete']);
+ expect(snapshot.combatQueue.events[0].value).toBe(2);
+ expect(snapshot.combatQueue.events[1].effect).toMatchObject({
+   type:'heal',value:2,range:2,optional:true});
+ expect(snapshot.combatQueue.index).toBe(2);
+ await page.reload();
+ await page.locator('#skipAbility').click();
+ const finished=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(finished.players[3].guard).toBe(2);
+ expect(finished.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
+ expect(finished.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
