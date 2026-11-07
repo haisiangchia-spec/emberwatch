@@ -223,6 +223,23 @@ This replaces earlier roadmap items calling for party-controlled final monster t
 
 ---
 
+## Terrain entry effects — v0.11.0
+
+Implemented:
+- Added a pure, serializable `engine/terrain.js` resolver for entering damaging traps and hazardous terrain, with scenario level 0–7 scaling (trap damage = level + 2; hazardous damage = 1 + ceil(level / 3)).
+- Traps trigger on entry, may carry authored damage and condition tokens, and are removed after triggering. Hazardous terrain deals damage on each entry and remains on the map. Flying and Jump traversal are exempt; a Jump ending on a tile triggers it.
+- **Monster ordinary movement now traverses the actual planned path hex by hex**, applying terrain immediately. A monster killed partway through its movement cannot subsequently attack, and the defeated monster drops loot at its death hex.
+- Forced Push/Pull of monsters applies the same terrain entry resolver on the new destination. The previously completed attack is not repeated if combat is paused or reloaded.
+- Pure-engine tests verify conditions, scaling, removal, persistent hazard, dying on entry and flying/jump exemption. Browser cases exercise forced movement onto a trap and hazardous terrain, and a lethal trap on a forced corridor route.
+
+**Still incomplete:**
+- Normal hero movement currently selects a final destination rather than executing and persisting every intermediate path hex. Terrain triggers and card-loss prevention for hero movement need their own stepwise queued implementation.
+- Nonstandard trap effects (healing, healing traps, all condition tokens), immunity and Ward/Brittle, icy sliding, teleport, full Jump and flying path/LOS fidelity, and special scenario triggers remain unfinished.
+- Traps and hazards are supported as serialized overlays in saved state; the current original demo scenario does not yet place terrain by default. This increment is mechanical groundwork rather than scenario expansion.
+- Monster route selection still uses the known prototype focus/negative-terrain priorities and retains the explicitly selected **automatic random tie-resolution exception**.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
