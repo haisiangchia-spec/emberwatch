@@ -1671,3 +1671,95 @@ test('flying hero ignores hazardous and trap damage even on the destination hex'
  expect(st.hazardous).toEqual([[2,5]]);
  expect(errors).toEqual([]);
 });
+
+test('hero entering chained ice slides for free past last icy hex',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:20}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[1].q=7;s.players[1].r=5;
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.icy=[[1,4],[2,4],[3,4]];s.traps=[];s.hazardous=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([4,4]);
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.icy).toEqual([[1,4],[2,4],[3,4]]);
+ expect(errors).toEqual([]);
+});
+
+test('ice stops sliding at blocked next hex',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:20}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[1].q=7;s.players[1].r=5;
+  s.walls=[];s.rocks=[[2,4]];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.icy=[[1,4]];s.traps=[];s.hazardous=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([1,4]);
+ expect(st.combatQueue).toBeNull();
+});
+
+test('hero ice slide into hazardous terrain pauses once and resumes after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:20}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[1].q=7;s.players[1].r=5;
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];s.scenario.level=3;
+  s.icy=[[1,4],[2,4]];s.traps=[];s.hazardous=[[3,4]];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([3,4]);
+ expect(st.pendingDamage.amount).toBe(2);
+ expect(st.combatQueue?.paused).toBe(true);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(st.players[0].maxHp-2);
+ expect(st.combatQueue).toBeNull();
+ expect(st.journal.filter(x=>x.includes('enters hazardous'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
+
+test('forced Push into chained ice automatically completes all sliding hexes',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0];
+  s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'ice-pushed',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  s.icy=[[2,4],[3,4]];s.traps=[];s.hazardous=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([4,4]);
+ expect(st.journal.filter(x=>x.includes(' slides to '))).toHaveLength(2);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
