@@ -1190,3 +1190,30 @@ test('Immobilized monster does not move but can attack adjacent focus',async ({p
  await page.locator('#takeDamage').click();
  expect(errors).toEqual([]);
 });
+
+test('monster focuses on a safer distant enemy rather than crossing a trap to a nearer enemy',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.players[0].q=2;s.players[0].r=4;
+  s.players[1].q=5;s.players[1].r=2;
+  for(let i=2;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'avoider',name:'Ash Raider',hp:8,maxHp:8,q:2,r:2,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  // All legal melee attack hexes adjacent to p0 require at least one trap.
+  s.traps=[[3,4],[2,3],[1,3],[1,4],[1,5],[2,5]];
+  s.monsterReveals={'Ash Raider':{name:'Path Test',initiative:20,
+    abilities:[{type:'move',value:0},{type:'attack',value:2,range:1}]}};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.journal.some(line=>line.includes(' focuses '+st.players[1].name))).toBe(true);
+ expect(st.journal.some(line=>line.includes(' focuses '+st.players[0].name))).toBe(false);
+ expect(errors).toEqual([]);
+});
