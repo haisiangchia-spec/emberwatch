@@ -414,6 +414,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.13.2 movement queue compilation
+
+- All player-selected hero Move actions now pass through `compileHeroQueue`, which accepts an already-planned route and destination and serializes each `heroMoveStep` followed by final action completion. The existing random-tie-aware path planner, per-hex cost, ice chain, trap/hazard, forced interruptions, rerouting and terrain resolution remain unchanged.
+- Supported ordered move instruction sequences can append self defensive effects and optional targeted Heal/Condition after a Move, with an independent saved decision. The Vanguard *Forward March* demo now performs Move 4 followed by optional Shield 1.
+- Compiler validates destination consistency, movement mode, values, and unsupported combinations before queue creation. Node conformance tests and browser regressions cover activation and skipping the suffix across reload; existing terrain/ice/route regression suite remains in place.
+- **Remaining F2 gaps:** movement *within* arbitrary multi-action sequences (including Move → Attack), mandatory movement decisions after another instruction, more complete persistent abilities and class mechanics. This does not reopen or rewrite F4 movement rules.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
