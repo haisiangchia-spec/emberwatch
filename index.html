@@ -712,7 +712,8 @@ function resolveOptionalHeroEffect(execute){
  if(execute&&actor){
    if(pending.effect.type==='heal'){
      const amount=healUnit(target,pending.effect.value||0);
-     log(actor.name+' restores '+amount+' HP to '+target.name+' (optional).');
+     log(actor.name+' restores '+amount+' HP to '+target.name+
+       (pending.mandatory?'':' (optional).'));
    }else if(pending.effect.type==='condition'){
      // The interpreter validates enemy targeting before writing conditions.
      // Preserve the live condition logger and figure state after resolution.
