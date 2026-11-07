@@ -4,6 +4,13 @@ async function openCleanGame(page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  // A clean browser deliberately opens the first-run setup overlay.
+  // Dismiss it by starting a local game before interacting with the board.
+  const overlay = page.locator('#overlay');
+  if (await overlay.isVisible()) {
+    await overlay.locator('#local').click();
+    await expect(overlay).toBeHidden();
+  }
   await expect(page.locator('#scenario')).toHaveText('The Cinder Vault');
 }
 
