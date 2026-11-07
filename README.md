@@ -1,3 +1,11 @@
+# Emberwatch v0.12.5 — Shared Optional Targeting
+
+Optional queued effects now share one target-eligibility contract for friendly Heal and enemy Condition instructions. Saved target choices are revalidated on resume, and a queue can apply or skip multiple optional steps in sequence without replaying earlier events. Unit and browser regressions cover range, team, line-of-sight, reload and target invalidation.
+
+F2 remains open pending a complete ability/card schema, full targeting/interruption support and removal of specialized live handlers.
+
+---
+
 # Emberwatch v0.12.3 — Live Optional Hero Ability Decisions
 
 The live action queue can now pause on an optional hero Shield/Retaliate/Infuse instruction and display an **Activate** or **Skip** decision. The decision survives save/reload via the queue cursor and `pendingAbilityChoice`. The original demo *Hold the Line* bottom action now demonstrates Guard 3 followed by optional Shield 1. Decisions resume the queue without duplicating the Guard event. Playwright tests cover both decisions across reload.
