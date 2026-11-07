@@ -78,3 +78,26 @@ assert.equal(splash.events.filter(e=>e.type==='attack').length,2);
 assert.throws(()=>apply(state(),'hero',[{type:'areaAttack',value:2,range:1,area:[{q:0,r:0}]}],[{anchor:{q:7,r:7}}]),/beyond range/);
 assert.throws(()=>apply(state(),'hero',[{type:'areaAttack',value:2,range:2,area:[]}],[{anchor:{q:2,r:1}}]),/shape/);
 console.log('F2 ability interpreter conformance assertions passed');
+const abilities=require('../engine/abilities.js');
+const shape=abilities.areaHexes({q:2,r:4},[{q:0,r:0},{q:-1,r:-1}]);
+assert.deepEqual(shape,[{q:2,r:4},{q:2,r:3}],'odd-row coordinates from axial offsets');
+const planned=abilities.beginSequence(state(),'hero',[
+ {type:'shield',value:1,duration:'round'},
+ {type:'attack',value:2,range:2,targets:2},
+ {type:'heal',value:1,range:2}
+]);
+let cursor=abilities.resumeSequence(planned);
+assert.equal(cursor.cursor.index,1);
+const paused=abilities.resumeSequence(cursor);
+assert.equal(paused.awaiting.type,'attack');
+assert.equal(paused.cursor.index,1,'missing choice must not advance cursor');
+cursor=abilities.resumeSequence(JSON.parse(JSON.stringify(paused)),{targets:['e1','e2']});
+assert.equal(cursor.cursor.index,2);
+assert.equal(cursor.state.units.e1.hp,6);
+cursor=abilities.resumeSequence(JSON.parse(JSON.stringify(cursor)),{targets:['ally']});
+assert.equal(cursor.done,true);
+assert.equal(cursor.cursor,null);
+assert.deepEqual(cursor.events.map(e=>e.type),['shield','attack','attack','heal']);
+assert.equal(cursor.state.units.ally.hp,9);
+assert.equal(planned.state.units.e1.hp,8,'serialized pipeline must not mutate original state');
+assert.throws(()=>abilities.resumeSequence(paused,{targets:['ally']}),/Invalid target/);
