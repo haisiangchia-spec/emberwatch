@@ -112,6 +112,7 @@ test('campaign hub persists purchases and card enhancements across a scenario re
   await expect(page.locator('#campaignRoster')).toContainText('Tempered Edge');
   await page.locator('[data-enhance="0"]').click();
   await expect(page.locator('#campaignRoster')).toContainText('Shield Rush ✓');
+  page.once('dialog', dialog => dialog.accept());
   await page.locator('#hubNext').click();
   await expect(page.locator('#phaseInfo')).toContainText('Round 1');
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).campaign);
@@ -137,6 +138,7 @@ test('campaign levels increase max HP on the next scenario', async ({ page }) =>
   });
   await page.reload();
   await page.locator('#campaignHub').click();
+  page.once('dialog', dialog => dialog.accept());
   await page.locator('#hubNext').click();
   const hp = await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0].maxHp);
   expect(hp).toBe(18);
