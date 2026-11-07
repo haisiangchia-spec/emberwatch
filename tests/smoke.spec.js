@@ -679,3 +679,70 @@ test('legacy interrupted monster save resumes without replaying earlier attacks'
  expect(st.journal.filter(x=>x.includes('attacks '))).toHaveLength(0);
  expect(errors).toEqual([]);
 });
+
+test('hero move and heal resolve through queued actions without duplicate completion',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.loot=[[0,3]];s.walls=[];s.rocks=[];s.difficult=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="0"][data-r="3"]').click();
+ let state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(state.players[0].q).toBe(0);
+ expect(state.players[0].r).toBe(3);
+ expect(state.players[0].coins).toBe(1);
+ expect(state.loot.some(([q,r])=>q===0&&r===3)).toBe(false);
+ expect(state.combatQueue).toBeNull();
+ await page.reload();
+ state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(state.players[0].coins).toBe(1);
+ expect(state.journal.filter(x=>x.includes('collects a coin'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
+
+test('structured monster multi-attack ability pauses per hit and resumes without replay',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'double-hitter',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{
+    name:'Double Strike',initiative:20,move:0,attack:0,range:0,
+    abilities:[{type:'move',value:0},{type:'attack',value:2,range:1},
+               {type:'attack',value:2,range:1}]
+  }};
+  s.modifiers.monsters.draw=[0,0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(state.combatQueue.index).toBe(3);
+ expect(state.combatQueue.paused).toBe(true);
+ const first=state.modifiers.monsters.discard.length;
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(state.combatQueue.index).toBe(4);
+ expect(state.combatQueue.paused).toBe(true);
+ expect(state.modifiers.monsters.discard.length).toBe(first+1);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ state=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(state.pendingDamage).toBeNull();
+ expect(state.combatQueue).toBeNull();
+ expect(state.turnIndex).toBe(2);
+ expect(state.journal.filter(x=>x.includes('attacks '))).toHaveLength(2);
+ expect(errors).toEqual([]);
+});
