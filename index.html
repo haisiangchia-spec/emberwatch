@@ -957,7 +957,14 @@ function runCombatQueue(){
            state.combatQueue,'optionalAbility');
          commit();return
        }
-       executeQueuedHeroEffect(actor,event.effect);
+       if(event.effect.type==='heal'&&!event.effect.optional){
+         const target=targets(actor,event.effect.range??1,'heal')
+           .find(p=>p.id===event.targetId);
+         if(target){
+           const amount=healUnit(target,event.effect.value||0);
+           log(actor.name+' restores '+amount+' HP to '+target.name);
+         }else log(actor.name+' has no legal target for Heal.');
+       }else executeQueuedHeroEffect(actor,event.effect);
      }
      continue
    }
@@ -1436,6 +1443,13 @@ function resolveHeroBoardAction(action,hex,targetId=null){
        finalStep:i===path.length-1})),
      {type:'heroActionComplete',actorId:p.id,action:clone(action)}
    ]);
+ }else if(action.kind==='heal'){
+   // Hero-selected targets are compiled into data instructions; range and
+   // line of sight are revalidated when the instruction actually executes.
+   state.combatQueue=window.EmberwatchCombatQueue.create('hero',
+     window.EmberwatchAbilities.compileHeroQueue(p.id,action,[
+       {type:'heal',value:'action',range:action.range}
+     ],{targetId}));
  }else state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
    {type:'heroActionResolve',actorId:p.id,action:clone(action),hex:{q:hex.q,r:hex.r},targetId},
    {type:'heroActionComplete',actorId:p.id,action:clone(action)}
