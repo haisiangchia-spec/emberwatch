@@ -58,6 +58,16 @@
    }).filter(id=>(step.range===undefined||distance(actor,state.units[id])<=step.range)
          &&(step.lineOfSight===false||!state.lineOfSight||state.lineOfSight[actor.id+'>'+id]!==false));
  }
+ // Reusable decision contract for targeted optional instruction checkpoints.
+ // The caller supplies the current figures and line-of-sight map; never trust
+ // saved target IDs without running this eligibility check again on resume.
+ function optionalTargetIds(state,actorId,step){
+   if(!state?.units?.[actorId]||!step||!['heal','condition'].includes(step.type))
+     throw Error('Unsupported optional targeting request');
+   if(step.range!==undefined&&(!Number.isFinite(step.range)||step.range<0))
+     throw Error('Invalid optional ability range');
+   return validTargets(state,state.units[actorId],step);
+ }
  function movePath(state,actor,target,type,path,maxSteps){
    if(!Array.isArray(path)||path.length>maxSteps)throw Error('Forced move distance exceeded');
    if(path.length===0)return;
@@ -245,5 +255,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,validTargets,optionalTargetIds,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
