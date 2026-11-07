@@ -423,6 +423,16 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.13.3 Move → Attack with deferred target selection
+
+- The shared ability compiler now supports a **terminal Attack after Move** as structured card instructions. Movement compiles into the original per-hex events; the final movement event is followed by a serializable `heroAttackTargetChoice` checkpoint, not an attack against a target chosen before moving.
+- The live action queue pauses at `abilityTarget`, showing eligible enemies from the hero's **post-movement position**, with current range and line-of-sight constraints. Target selection persists across reload and is revalidated when confirmed.
+- Selecting a target starts the existing hit/linked-effects/retaliation pipeline without replaying movement; when no legal targets remain, the action can complete without drawing an attack modifier or becoming stuck.
+- Unit and browser fixtures cover event serialization, unsupported combinations, target choice persistence, and post-reload target invalidation. The original demo card catalogue is unchanged to preserve previous action behavior.
+- **Still not F2 closure:** optional attacks, Move → Attack with additional suffixes or multiple target groups, arbitrary repeated movement, item modifiers, and the full class-specific ability catalogue remain outside the generic compiler.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
