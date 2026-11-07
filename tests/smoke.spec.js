@@ -1789,6 +1789,11 @@ test('monster chains free icy movement to reach a hero and attacks only once aft
  await expect(page.locator('#damageChoice')).toBeVisible();
  let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect([st.enemies[0].q,st.enemies[0].r]).toEqual([4,3]);
+ expect(st.monsterTurnPlans['ice-runner'].spent).toBeUndefined();
+ expect(st.monsterTurnPlans['ice-runner'].stop).toEqual({q:4,r:3});
+ expect(st.monsterTurnPlans['ice-runner'].path.slice(1)).toEqual([
+   {q:2,r:3},{q:3,r:3,slide:true},{q:4,r:3,slide:true}
+ ]);
  expect(st.combatQueue?.paused).toBe(true);
  expect(st.modifiers.monsters.discard).toHaveLength(1);
  expect(st.journal.filter(x=>x.includes(' slides to '))).toHaveLength(2);
