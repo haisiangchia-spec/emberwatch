@@ -192,6 +192,22 @@ Primary verification references: the [Frosthaven Official FAQ §5.8](https://cep
 
 ---
 
+## Monster multi-target positioning — v0.10.8
+
+Primary references: [Frosthaven Official FAQ §5.8](https://cephalofairgames.github.io/frosthaven-faq/) and the rulebook monster-movement steps (pp. 42, 75).
+
+**Implemented and tested:**
+- Authored monster Attack steps can include `targets: N` with N greater than one. They retain the primary focus selected independently of disadvantage and additional targets.
+- The new pure `multiTargetPosition` selector ranks **reachable, unoccupied positions that can attack the primary focus** by (1) fewest negative hexes, (2) greatest number of attackable enemies up to the card's target count, (3) fewest disadvantaged attacks, then (4) least movement cost. Stable row/column ordering is used for remaining ties in this prototype.
+- Once a position is selected, target IDs and the destination are saved in the turn plan. A `monsterAttack` queue event expands into one event per target, with individual modifier draws and damage-prevention prompts. Saving and reloading after the first attack does not replay it.
+- If no qualifying reachable attack position exists this turn, the previous movement-to-primary-focus policy remains as the fallback.
+- Pure-engine tests check negative-hex priority, maximizing additional targets, minimizing disadvantage and limiting movement cost. Browser tests cover two distinct attacks interrupted by damage prompts, the queue cursor, and the attacker's death to Retaliate.
+- Code-bearing run [42377931836](https://github.com/haisiangchia-spec/emberwatch/actions/runs/42377931836) passed 52 Chromium tests. The extra retaliation-death case is separately checked by CI.
+
+**Remaining important limitations:** The party cannot yet choose among equally optimal destination hexes, secondary targets or the order in which a monster attacks them; this prototype uses deterministic seat and coordinate ties. The full rules allow party decisions in these ambiguous cases, which may change the outcome if Retaliate kills the monster. The current implementation supports `targets` metadata on a single Attack step; full red-hex AoE, summons, alternate attack/focus sequencing, large figures and detailed terrain/LOS edge cases remain incomplete. Its conformance tests cover original demonstration cards, not the official class or monster card catalog.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
