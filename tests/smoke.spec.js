@@ -404,7 +404,7 @@ test('Iron Sweep can push a surviving enemy one legal hex', async ({page})=>{
  await page.reload();
  await page.locator('[data-do="top"]').click();
  await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
- await expect(page.locator('#actionUI')).toContainText('forced');
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
  await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,4]);
@@ -421,7 +421,7 @@ test('Mark Quarry can pull a surviving enemy closer', async ({page})=>{
  await page.reload();
  await page.locator('[data-do="top"]').click();
  await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
- await expect(page.locator('#actionUI')).toContainText('forced');
+ await expect(page.locator('#actionUI')).toContainText('pull the enemy');
  await page.locator('#board polygon[data-q="1"][data-r="3"]').click();
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect([st.enemies[0].q,st.enemies[0].r]).toEqual([1,3]);
