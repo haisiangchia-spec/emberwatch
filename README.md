@@ -1,8 +1,12 @@
-# Emberwatch v0.10.8 — Multi-Target Monster Attacks
+# Emberwatch v0.10.9 — Automatic Random Tie Resolution
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- **Intentional rule exception:** whenever several monster choices are equally valid after applying normal tactical priorities, Emberwatch randomly selects and executes one. No party vote or manual tie-break is required.
+- This includes tied monster focus targets, attack hexes, retreat destinations, additional attack targets and attack order. The chosen action is saved before execution so reloads never reroll completed choices.
+- The remaining movement, terrain, combat and card-fidelity gaps continue to be tracked in the tactical fidelity plan.
 
 - Monster Attack steps with `targets: N` now seek positions that preserve primary focus, minimize negative terrain, maximize additional targets, minimize disadvantaged attacks, and then movement cost.
 - Individual monster attacks have independent attack-modifier draws and damage prompts, with the shared queue surviving reloads. A monster defeated by Retaliate cannot finish its remaining attacks.
