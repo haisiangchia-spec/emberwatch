@@ -502,7 +502,7 @@ test('lethal attack does not trigger defender retaliation',async ({page})=>{
  await page.evaluate(()=>{
   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
   s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
-  s.players[0].picked=[0,1];s.enemies=[{
+  s.players[0].picked=[0,1];s.modifiers.heroes[0].draw=[0];s.modifiers.heroes[0].discard=[];s.enemies=[{
    id:'e0',name:'Ash Raider',hp:1,maxHp:1,q:1,r:4,conditions:{},
    active:[{type:'retaliate',value:9,range:1,duration:'round'}]
   }];
