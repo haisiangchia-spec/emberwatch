@@ -1,8 +1,12 @@
-# Emberwatch v0.11.3 — Ice-Aware Monster Routing
+# Emberwatch v0.11.4 — Dynamic Movement Obstructions
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Hero and monster movement queues now revalidate each queued hex against the live board. Newly blocked hexes or missing ice cancel the remaining steps safely without replaying earlier terrain effects.
+- Ordinary monster movement retains passage through allies but stops before occupied destinations and blocked icy slides. Completed focus and attack decisions remain saved through reloads.
+- This is **safe stopping, not automatic replanning**. Full reactive pathfinding and network concurrency remain future tactical-fidelity work.
 
 - Monster focus and pathfinding now anticipate icy slides: entering an icy hex costs one step and following slide hexes are free. The planned route stores each sliding hex, including any negative terrain it crosses.
 - Because route costs account for ice, a farther hero can become the primary focus when ice offers a shorter paid route. The selected plan survives reloads and still follows Emberwatch's randomized tie rule.
