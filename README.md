@@ -1,8 +1,12 @@
-# Emberwatch v0.10.3 — Persistent Area and Multi-Targeting
+# Emberwatch v0.10.4 — Saved Monster Focus
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Scripted monster turns now select and save their focus as a standalone queued event before moving and attacking. The choice and route survive reloads during damage decisions.
+- The focus ordering was extracted into a standalone, tested module. It preserves Emberwatch's current selection rule and is **not** yet a complete Frosthaven focus implementation.
+- The latest code-bearing CI run passed 41 Chromium browser tests; legacy monster cards still require migration to the stepwise queue.
 
 - Multi-target and area-attack decisions now persist across reloads, including chosen anchor, affected figures, completed targets and remaining attacks.
 - After a Retaliate damage-prevention pause, the next target remains available without replaying resolved hits. All 40 Chromium tests passed on the latest code-bearing run.
