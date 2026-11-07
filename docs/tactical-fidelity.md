@@ -150,6 +150,27 @@ Implemented in the HTML5 game and automated tests:
 
 ---
 
+## Monster focus rules audit — v0.10.6
+
+Compared against the Frosthaven rulebook (monster focus and movement, pp. 41–42 and monster-turn guide pp. 74–75) and the official FAQ, §5.8 (last checked November 2026). Source: https://cephalofairgames.github.io/frosthaven-faq/
+
+**Newly implemented and regression-tested:**
+- A monster's pathfinding now lexicographically minimizes the number of **negative hexes** (traps or hazardous terrain) before movement-point cost, matching the focus priority that a safer long route beats a dangerous short route. Difficult terrain still costs additional movement but is not a negative hex.
+- The extracted focus comparator incorporates negative-hex count as its first priority, then path movement cost, range to the enemy, initiative, and stable deterministic ties.
+- An **attackless** or **Disarmed** monster calculates its primary focus as if for a single-target melee attack, even if the shown ability would otherwise be ranged. Disarm prevents attack execution while allowing movement and non-attack abilities.
+- **Immobilize** prohibits monster movement but does not suppress an otherwise valid attack.
+- The new browser fixture checks an enemy behind a ring of traps versus a farther safe enemy. Node tests cover the negative-hex priority; other browser tests cover attackless movement, Disarm and Immobilize.
+- Code-bearing run **42376980173**: **47 passing Chromium regression tests** and successful unit-test stage.
+
+**Significant remaining gaps — do not declare full Frosthaven AI fidelity:**
+- Trap and hazardous-terrain *trigger effects*, consumption/removal, immunity and figure damage when actually entered are not handled by this focus-path update.
+- Icy-terrain sliding, precise hex edge interactions, flying/jump traversal and path-cost edge cases need conformance fixtures.
+- The rules of ranged repositioning to avoid Disadvantage, multi-target maximization, player-choice final tie-breaks, monster standee/elite activation order, switching to another focus if the first is no longer available, and nonattack support targeting still require dedicated tests and implementations.
+- The current focus algorithm still chooses an attack-position path with a deterministic row/column tie-break; this is a technical prototype convention, not a fully verified application of official ambiguity-resolution rules.
+- The prototype's monster/card data remains original demonstration content. Passing tests establish the implemented mechanics only.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
