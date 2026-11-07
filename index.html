@@ -523,7 +523,7 @@ function enemyTurn(type){
   if(plan.stop&&(plan.stop.q!==enemy.q||plan.stop.r!==enemy.r)){enemy.q=plan.stop.q;enemy.r=plan.stop.r;log(enemy.name+' moves toward '+plan.target.name+'.')}
   const target=plan.target;
   if(target.hp>0&&axialDist(enemy,target)<=plan.spec.range&&lineOfSight(enemy,target)){
-   const roll=attackDamage(plan.spec.attack,state.modifiers.monsters);
+   const roll=rollAttack(plan.spec.attack,state.modifiers.monsters,enemy);
    log(enemy.name+' attacks '+target.name+' ('+modifierLabel(roll.mod)+').');
    unitEnd(enemy);state.enemyCursor++;
    if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,sourceId:enemy.id,attack:true,condition:attackScript?.condition||revealed.condition}))return;
