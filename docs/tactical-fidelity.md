@@ -322,6 +322,16 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.2 serialized linked hero attacks
+
+- Hero attack hits now enqueue ordered `heroAttackLinked` instructions before the existing post-hit/Retaliate continuation. The reusable interpreter normalizes the demo card's condition and optional Push/Pull metadata into ordered steps; individual queued instructions are serialized for save/reload.
+- The hit modifier (including a null/miss) is committed to the pending linked events so an interruption **cannot redraw** an already resolved attack. A null prevents the linked condition but does not intrinsically cancel the separate Push/Pull effect.
+- Forced-move choices continue to pause the queue; existing Push/Pull and Retaliate interruption handling remains. Previously saved two-event attacks use a legacy-compatible path when no linked events are present.
+- Node and browser regressions check step ordering, skip-on-null conditions, the persisted modifier and the existing forced Push flow.
+- **Not F2 closure:** this is a targeted integration of the live attack follow-up pipeline, not a complete generic ability runner for all class actions, optional target choices, elements, condition immunity and monster special effects.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
