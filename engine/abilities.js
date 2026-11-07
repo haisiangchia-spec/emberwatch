@@ -74,7 +74,6 @@
      }
      if(type==='move'){
        if(!Array.isArray(choice.path))throw Error('Move requires a path');
-       movePath(next,actor,actor,'move',[],0); // movement receives separate path validation below
        if(choice.path.length>(step.value||0))throw Error('Move distance exceeded');
        let origin={q:actor.q,r:actor.r};
        for(const pos of choice.path){
