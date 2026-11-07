@@ -32,3 +32,27 @@ assert.equal(choose(negativeChoices).chosen.targetId,'far-safe',
 assert.equal(choose(negativeChoices).ranking[2].targetId,'far-danger');
 assert.throws(()=>choose([{...negativeChoices[0],negative:-1}]),/Invalid/);
 console.log('Monster negative-hex priority assertions passed');
+
+const {rangedRetreat}=require('../engine/monster-focus.js');
+const baseRetreat={origin:{distance:1},focus:{id:'p0'},range:3,move:3,
+ candidates:[
+  {q:2,r:1,cost:2,negative:0,distance:2,lineOfSight:true,occupied:false},
+  {q:1,r:2,cost:1,negative:0,distance:2,lineOfSight:true,occupied:false},
+  {q:3,r:1,cost:1,negative:1,distance:2,lineOfSight:true,occupied:false},
+  {q:1,r:3,cost:1,negative:0,distance:2,lineOfSight:true,occupied:true}
+ ]};
+assert.deepEqual(rangedRetreat(baseRetreat),{q:1,r:2,cost:1},
+  'retreat to minimum-movement safe unoccupied hex');
+assert.deepEqual(rangedRetreat({...baseRetreat,muddled:true}),null,
+  'already muddled monster does not reposition to escape disadvantage');
+assert.deepEqual(rangedRetreat({...baseRetreat,muddled:true,strengthened:true}),
+  {q:1,r:2,cost:1},'strengthen counteracts muddle');
+assert.equal(rangedRetreat({...baseRetreat,origin:{distance:2}}),null,
+  'do not change position if already not adjacent to focus');
+assert.equal(rangedRetreat({...baseRetreat,move:0}),null);
+assert.equal(rangedRetreat({...baseRetreat,range:1}),null);
+assert.equal(rangedRetreat({...baseRetreat,candidates:baseRetreat.candidates.map(x=>({...x,negative:1}))}),null,
+  'must not move across negative terrain just to avoid disadvantage');
+assert.equal(rangedRetreat({...baseRetreat,candidates:baseRetreat.candidates.map(x=>({...x,lineOfSight:false}))}),null);
+assert.throws(()=>rangedRetreat({...baseRetreat,candidates:null}),/Invalid/);
+console.log('Ranged monster retreat assertions passed');
