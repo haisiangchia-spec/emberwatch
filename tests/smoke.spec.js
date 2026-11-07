@@ -1333,3 +1333,48 @@ test('explicit ranged Range 1 attack suffers adjacency disadvantage without retr
  expect(st.modifiers.monsters.discard.length).toBe(2);
  expect(errors).toEqual([]);
 });
+
+test('multi-target monster chooses one saved position and separately attacks two figures through reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  for(let i=2;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'multi-archer',name:'Ash Archer',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.traps=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Archer':{name:'Double Target',initiative:20,abilities:[
+    {type:'move',value:2},{type:'attack',value:2,range:3,targets:2}
+  ]}};
+  s.modifiers.monsters.draw=[0,0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue.owner).toBe('monster');
+ const hits=st.combatQueue.events.filter(e=>e.type==='monsterAttack');
+ expect(hits).toHaveLength(2);
+ expect(new Set(hits.map(e=>e.targetId)).size).toBe(2);
+ expect(hits.map(e=>e.targetId)).toContain(st.monsterTurnPlans['multi-archer'].targetId);
+ expect(st.combatQueue.index).toBe(4);
+ const firstHit=st.pendingDamage.heroIndex,draws=st.modifiers.monsters.discard.length;
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue.index).toBe(5);
+ expect(st.modifiers.monsters.discard.length).toBe(draws+1);
+ expect(st.pendingDamage.heroIndex).not.toBe(firstHit);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingDamage).toBeNull();
+ expect(st.monsterTurnPlans['multi-archer']).toBeUndefined();
+ expect(st.journal.filter(line=>line.includes(' attacks '))).toHaveLength(2);
+ expect(errors).toEqual([]);
+});
