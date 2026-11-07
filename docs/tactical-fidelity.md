@@ -138,6 +138,18 @@ Implemented in the HTML5 game and automated tests:
 
 ---
 
+## Milestone 1 continuation — v0.10.5 legacy monster migration
+
+- All **new monster activations** now build a saved, stepwise queue: Start → Focus → Move → Attack → any additional effects → Finish.
+- Older modifier-based monster ability cards are normalized by `monsterSteps()` into ordinary structured Move/Attack steps, carrying the resulting values and condition as immutable data in each queue event.
+- Both authored multi-step cards and legacy modifier cards use the same focus snapshot, movement, attack/damage prompt and finish handlers. No newly started monster turn generates an atomic `monsterTurn` event.
+- **Legacy compatibility remains** for previously saved, already-running `monsterTurn` events and previous pending-damage cursors, avoiding replay of completed attacks.
+- The Chromium suite checks ordinary two-monster interruptions, stepwise double attacks, focus persistence, conversion of modifier-based cards across reloads and backward compatibility.
+
+**Milestone 1 is still not complete:** The old `executeMonsterQueueEvent` function remains solely for loading historical queue snapshots, but the common route planner and focus algorithm still require an authoritative rules audit. More extensive monster effect triggers, change-of-focus edge cases, multi-target targeting, status and environmental interrupts, and four-client concurrency remain outside verified tactical fidelity. Current implementation uses original demo monsters, not comprehensive official Frosthaven data.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
