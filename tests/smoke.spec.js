@@ -1378,3 +1378,37 @@ test('multi-target monster chooses one saved position and separately attacks two
  expect(st.journal.filter(line=>line.includes(' attacks '))).toHaveLength(2);
  expect(errors).toEqual([]);
 });
+
+test('monster killed by first target retaliation cannot continue multi-target attack',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  for(let i=2;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.players[1].active=[{type:'retaliate',value:99,range:6,duration:'round'}];
+  s.enemies=[{id:'doomed-multi',name:'Ash Archer',hp:4,maxHp:4,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.traps=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Archer':{name:'Interrupted Volley',initiative:20,abilities:[
+    {type:'move',value:2},{type:'attack',value:2,range:3,targets:2}
+  ]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingDamage.heroIndex).toBe(1);
+ const used=st.modifiers.monsters.discard.length;
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='doomed-multi')).toBeUndefined();
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.modifiers.monsters.discard.length).toBe(used);
+ expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
