@@ -676,12 +676,24 @@ function executeQueuedHeroEffect(actor,effect){
 }
 function optionalHeroTargets(pending){
  const actor=state.players.find(p=>p.id===pending?.actorId&&p.hp>0&&!p.exhausted);
- if(!actor||pending.effect?.type!=='heal')return [];
- return targets(actor,pending.effect.range??1,'heal');
+ const effect=pending?.effect;
+ if(!actor||!['heal','condition'].includes(effect?.type))return [];
+ const figures=[...state.players.filter(p=>p.hp>0&&!p.exhausted),
+   ...state.enemies.filter(e=>e.hp>0)];
+ const units=Object.fromEntries(figures.map(p=>[p.id,{
+   id:p.id,team:p.id.startsWith('p')?'heroes':'monsters',
+   q:p.q,r:p.r,hp:p.hp,maxHp:p.maxHp
+ }]));
+ const lineOfSightMap={};
+ for(const fig of figures)lineOfSightMap[actor.id+'>'+fig.id]=
+   discovered(fig.q,fig.r)&&lineOfSight(actor,fig);
+ const ids=window.EmberwatchAbilities.optionalTargetIds(
+   {units,lineOfSight:lineOfSightMap},actor.id,effect);
+ return ids.map(id=>figures.find(p=>p.id===id));
 }
 function chooseOptionalHeroTarget(id){
  const pending=state.pendingAbilityChoice,q=state.combatQueue;
- if(!pending||q?.pauseReason!=='optionalAbility'||pending.effect.type!=='heal')return;
+ if(!pending||q?.pauseReason!=='optionalAbility'||q.index!==pending.queueIndex+1)return;
  if(!optionalHeroTargets(pending).some(p=>p.id===id))return;
  pending.targetId=id;
  commit();
@@ -692,20 +704,33 @@ function resolveOptionalHeroEffect(execute){
  if(pending.queueIndex!==q.index-1||q.events[pending.queueIndex]?.type!=='heroAbilityEffect')
    throw Error('Optional ability checkpoint no longer matches combat queue');
  const actor=state.players.find(p=>p.id===pending.actorId&&p.hp>0&&!p.exhausted);
+ const targeted=['heal','condition'].includes(pending.effect.type);
  let target=null;
- if(execute&&actor&&pending.effect.type==='heal'){
+ if(execute&&actor&&targeted){
    target=optionalHeroTargets(pending).find(p=>p.id===pending.targetId);
    if(!target){commit();return}
  }
- state.pendingAbilityChoice=null;
  if(execute&&actor){
-   if(target){
-     // Healing (including cleansing) shares the live effect resolution path
-     // without changing attack modifiers or any already committed guard.
+   if(pending.effect.type==='heal'){
      const amount=healUnit(target,pending.effect.value||0);
      log(actor.name+' restores '+amount+' HP to '+target.name+' (optional).');
+   }else if(pending.effect.type==='condition'){
+     // The interpreter validates enemy targeting before writing conditions.
+     // Preserve the live condition logger and figure state after resolution.
+     const snapshot={units:{
+       [actor.id]:{id:actor.id,team:'heroes',q:actor.q,r:actor.r,hp:actor.hp},
+       [target.id]:{id:target.id,team:'monsters',q:target.q,r:target.r,
+         hp:target.hp,conditions:clone(target.conditions||{})}
+     }};
+     const output=window.EmberwatchAbilities.apply(snapshot,actor.id,
+       [pending.effect],[{targets:[target.id]}]);
+     const conditions=output.state.units[target.id].conditions;
+     if(!conditions?.[pending.effect.condition])
+       throw Error('Optional condition did not resolve');
+     addCondition(target,pending.effect.condition);
    }else executeQueuedHeroEffect(actor,pending.effect);
  }else log((actor?.name||'Hero')+' skips optional '+pending.effect.type+'.');
+ state.pendingAbilityChoice=null;
  resumeCombatQueue();
 }
 function resumeCombatQueue(){
@@ -1433,10 +1458,11 @@ function render(){if(!state)return;if(state.phase==='act'&&state.pendingHeroChoi
 if(state.pendingAbilityChoice&&state.combatQueue?.paused&&
  state.combatQueue.pauseReason==='optionalAbility'){
  const choice=state.pendingAbilityChoice,actor=state.players.find(p=>p.id===choice.actorId);
- const effect=choice.effect,healing=effect.type==='heal';
- const candidates=healing?optionalHeroTargets(choice):[];
- const selected=healing?candidates.find(p=>p.id===choice.targetId):null;
- a.innerHTML=`<div id="optionalAbilityChoice"><h3>Optional ability · ${esc(actor?.name||'Hero')}</h3><p>Activate ${esc(effect.type)} ${Number(effect.value||0)} or skip this optional step?</p>${healing?`<div class="section"><p>Select a friendly target (range ${Number(effect.range??1)}):</p><div class="controls">${candidates.map(p=>`<button class="small" data-optional-target="${esc(p.id)}">${esc(p.name)} · ${p.hp}/${p.maxHp} HP</button>`).join('')}</div></div>`:''}<div class="controls"><button id="executeAbility" class="primary" ${healing&&!selected?'disabled':''}>Activate ability</button><button id="skipAbility">Skip ability</button></div></div>`;
+ const effect=choice.effect,targeted=['heal','condition'].includes(effect.type);
+ const candidates=targeted?optionalHeroTargets(choice):[];
+ const selected=targeted?candidates.find(p=>p.id===choice.targetId):null;
+ const targetLabel=effect.type==='heal'?'friendly':'enemy';
+ a.innerHTML=`<div id="optionalAbilityChoice"><h3>Optional ability · ${esc(actor?.name||'Hero')}</h3><p>Activate ${esc(effect.type)} ${Number(effect.value||0)}${effect.condition?' ('+esc(effect.condition)+')':''} or skip this optional step?</p>${targeted?`<div class="section"><p>Select a ${targetLabel} target (range ${Number(effect.range??1)}):</p><div class="controls">${candidates.map(p=>`<button class="small" data-optional-target="${esc(p.id)}">${esc(p.name)} · ${p.hp}/${p.maxHp} HP</button>`).join('')}</div></div>`:''}<div class="controls"><button id="executeAbility" class="primary" ${targeted&&!selected?'disabled':''}>Activate ability</button><button id="skipAbility">Skip ability</button></div></div>`;
  a.querySelectorAll('[data-optional-target]').forEach(b=>
    b.onclick=()=>chooseOptionalHeroTarget(b.dataset.optionalTarget));
  $('executeAbility').onclick=()=>resolveOptionalHeroEffect(true);
