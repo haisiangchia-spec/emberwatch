@@ -56,7 +56,7 @@ The independent `engine/abilities.js` now provides `beginSequence(state, actorId
 
 `areaHexes(anchor, offsets)` converts axial shape offsets to the game's odd-row coordinates. In the live game, the original Runesmith **Arc Pulse** now allows choosing a legal anchor and then targeting each enemy caught in its two-hex area pattern. Attack range applies to the anchor, not independently to every affected hex. A separate Chromium regression covers an affected enemy beyond anchor range.
 
-The area implementation is still deliberately narrow: no shape rotation, multi-hex obstacles, obstacle edge LOS, multi-hex figures, modifier advantage, or generic interruption queue for all monsters yet. Monsters retain their existing AI/card implementation pending a later dedicated port into the shared interpreter.
+The area implementation is still deliberately narrow: no shape rotation, multi-hex obstacles, obstacle edge LOS, multi-hex figures, modifier advantage, or generic interruption queue for all monsters yet. Monster cards now pass through `monsterSteps(profile, card)`, converting legacy card modifiers into structured Move/Attack entries. The original Ash Raider **Savage Lunge** is represented directly by structured ability data, and the existing monster planner reads its move, attack, range and attack condition from that structure. The standalone queue also executes monster scripts in unit tests. However, **monster focus, movement execution, and damage-prevention interrupts still use the older AI/turn code**; monster turns are not yet fully executed through the shared cursor.
 
 ---
 
