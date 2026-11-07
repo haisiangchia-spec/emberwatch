@@ -116,3 +116,14 @@ assert.equal(monsterMove.cursor.index,1);
 const monsterAttack=abilities.resumeSequence(monsterMove,{targets:['hero']});
 assert.equal(monsterAttack.state.units.hero.hp,7);
 assert.equal(monsterAttack.done,true);
+
+const calculate=abilities.hitDamage;
+assert.deepEqual(calculate({power:5,guard:2,shield:1,poison:true}),{raw:6,guard:2,shield:1,damage:3});
+assert.equal(calculate({power:2,guard:5,shield:3}).damage,0);
+assert.equal(calculate({power:0,poison:true}).damage,1);
+assert.throws(()=>calculate({power:-1}),/negative/);
+assert.throws(()=>calculate({power:Infinity}),/finite/);
+const retaliationOrigin={q:1,r:1,hp:10,active:[{type:'retaliate',value:2,range:1},{type:'retaliate',value:1,range:1}]};
+assert.equal(abilities.retaliation(retaliationOrigin,{q:2,r:1,hp:6}),3);
+assert.equal(abilities.retaliation(retaliationOrigin,{q:3,r:1,hp:6}),0);
+assert.equal(abilities.retaliation({...retaliationOrigin,hp:0},{q:2,r:1,hp:6}),0);
