@@ -2160,3 +2160,36 @@ test('monster hex checkpoint reroutes around newly blocked step with unspent bud
  expect(done.modifiers.monsters.discard).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+
+test('shared F2 healing caps a queued monster effect after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+   s.phase='damage';s.order=[{type:'enemy',id:'Ash Raider',initiative:20}];
+   s.turnIndex=0;
+   s.enemies=[{id:'healing-test',name:'Ash Raider',hp:5,maxHp:9,q:2,r:3,conditions:{}}];
+   s.monsterTurnPlans={'healing-test':{skip:false,targetId:null,focused:true}};
+   s.monsterReveals={'Ash Raider':{name:'Recovery',initiative:20,
+     abilities:[{type:'heal',value:7}]}};
+   s.combatQueue={version:1,owner:'monster',index:0,paused:true,pauseReason:'damage',
+     events:[
+       {type:'monsterEffect',actorId:'healing-test',monsterType:'Ash Raider',
+        stepIndex:0,step:{type:'heal',value:7}},
+       {type:'monsterFinish',actorId:'healing-test',monsterType:'Ash Raider'}
+     ]};
+   s.pendingDamage={heroIndex:0,amount:1,source:'Previous event',
+     condition:null,resume:'queue',monsterType:null,sourceId:null,attack:false};
+   s.modifiers.monsters.draw=[0,0];s.modifiers.monsters.discard=[];
+   localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='healing-test').hp).toBe(9);
+ expect(st.journal.filter(x=>x.includes('Ash Raider heals 4 HP'))).toHaveLength(1);
+ expect(st.modifiers.monsters.discard).toHaveLength(0);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
