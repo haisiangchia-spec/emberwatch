@@ -2338,3 +2338,64 @@ test('F2 live optional Shield can be skipped after reload without replaying Guar
  expect(st.pendingAbilityChoice??null).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 optional allied Heal target survives reload and resolves after Guard exactly once',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:3,initiative:63}];s.turnIndex=0;
+  s.players[3].picked=[0,1];s.players[3].guard=0;s.players[3].active=[];
+  s.players[2].hp=5;s.players[2].conditions={poison:true,wound:true};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ await expect(page.locator('#executeAbility')).toBeDisabled();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[3].guard).toBe(2);
+ expect(st.players[2].hp).toBe(5);
+ expect(st.combatQueue.pauseReason).toBe('optionalAbility');
+ await page.locator('[data-optional-target="p2"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingAbilityChoice.targetId).toBe('p2');
+ await page.reload();
+ await expect(page.locator('#executeAbility')).toBeEnabled();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[3].guard).toBe(2);
+ expect(st.players[2].hp).toBe(7);
+ expect(st.players[2].conditions.poison).toBeUndefined();
+ expect(st.players[2].conditions.wound).toBeUndefined();
+ expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('restores 2 HP'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingAbilityChoice??null).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 optional allied Heal skips without target or duplicate effects after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:3,initiative:63}];s.turnIndex=0;
+  s.players[3].picked=[0,1];s.players[3].guard=0;
+  s.players[2].hp=5;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.reload();
+ await page.locator('#skipAbility').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[3].guard).toBe(2);
+ expect(st.players[2].hp).toBe(5);
+ expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('skips optional heal'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(st.pendingAbilityChoice??null).toBeNull();
+ expect(errors).toEqual([]);
+});
