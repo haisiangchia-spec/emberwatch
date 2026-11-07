@@ -1115,3 +1115,78 @@ test('pre-migration atomic monster queue snapshot completes without replaying at
  expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
  expect(errors).toEqual([]);
 });
+
+test('monster without an attack still focuses as melee and moves',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'marcher',name:'Ash Raider',hp:8,maxHp:8,q:1,r:2,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{name:'Advance Only',initiative:20,abilities:[{type:'move',value:2}]}};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.turnIndex).toBe(2);
+ expect(st.enemies[0].q!==1||st.enemies[0].r!==2).toBe(true);
+ expect(st.journal.filter(x=>x.includes(' focuses '))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
+ expect(errors).toEqual([]);
+});
+
+test('Disarm suppresses monster attack while retaining melee focus',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'disarmed',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{disarm:true}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{name:'Cannot Attack',initiative:20,abilities:[
+   {type:'move',value:1},{type:'attack',value:3,range:2}
+  ]}};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.turnIndex).toBe(2);
+ expect(st.journal.filter(x=>x.includes(' focuses '))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
+ expect(st.pendingDamage).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('Immobilized monster does not move but can attack adjacent focus',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'stuck',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{immobilize:true}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{name:'Rooted Swing',initiative:20,abilities:[
+   {type:'move',value:3},{type:'attack',value:2,range:1}
+  ]}};
+  s.modifiers.monsters.draw=[0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].q).toBe(1);
+ expect(st.enemies[0].r).toBe(3);
+ expect(st.pendingDamage.amount).toBe(2);
+ await page.locator('#takeDamage').click();
+ expect(errors).toEqual([]);
+});
