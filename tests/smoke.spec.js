@@ -2881,3 +2881,61 @@ test('F2 saved linked Push resolves before post-hit optional Shield',async ({pag
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 Forward March compiled Move then optional Shield resumes once after reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:26}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[0].active=[];
+  s.walls=[];s.rocks=[];s.difficult=[];s.loot=[[0,3]];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="0"][data-r="3"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([0,3]);
+ expect(st.players[0].coins).toBe(1);
+ expect(st.players[0].active.filter(e=>e.type==='shield')).toHaveLength(0);
+ expect(st.combatQueue.events.map(e=>e.type)).toEqual([
+  'heroMoveStep','heroAbilityEffect','heroActionComplete']);
+ expect(st.combatQueue.pauseReason).toBe('optionalAbility');
+ await page.reload();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].coins).toBe(1);
+ expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('collects a coin'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 Forward March can skip post-move Shield after reload without repeating movement',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:26}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[0].active=[];
+  s.walls=[];s.rocks=[];s.difficult=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ await page.locator('#board polygon[data-q="0"][data-r="3"]').click();
+ await expect(page.locator('#optionalAbilityChoice')).toBeVisible();
+ await page.reload();
+ await page.locator('#skipAbility').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([0,3]);
+ expect(st.players[0].active.filter(e=>e.type==='shield')).toHaveLength(0);
+ expect(st.journal.filter(x=>x.includes('moves to 0,3'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('skips optional shield'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
