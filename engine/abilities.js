@@ -194,8 +194,10 @@
      const later=steps.slice(attackIndex+1);
      const suffixAttacks=later.filter(step=>step?.type==='attack');
      if(suffixAttacks.length>2||later.some((step,i)=>step?.type==='attack'&&
-       later.slice(0,i).some(previous=>previous?.type!=='attack')))
-       throw Error('Repeated attacks must be consecutive (up to three attacks)');
+       later.slice(0,i).some(previous=>
+         previous?.type!=='attack'&&
+         !['shield','retaliate','infuse'].includes(previous?.type))))
+       throw Error('Only defensive self effects may separate repeated attacks (up to three attacks)');
      const suffix=later.map(instruction=>{
        const effect=copy(instruction);
        if(!['attack','shield','retaliate','infuse','heal','condition'].includes(effect.type))
@@ -273,6 +275,28 @@
    }
    events.push({type:'heroActionComplete',actorId,action:copy(action)});
    return events;
+ }
+ // Compile ONLY the unexecuted tail of an already-resolved attack.
+ // Effects preceding a further attack are committed first, and the target is
+ // selected later from current board state. No hit or modifier is replayed.
+ function compileAttackContinuation(actorId,action){
+   if(!Array.isArray(action?.postAttackSteps)||!action.postAttackSteps.length)
+     throw Error('No attack continuation steps');
+   const steps=copy(action.postAttackSteps);
+   const nextAttack=steps.findIndex(step=>step.type==='attack');
+   if(nextAttack<0)return compileHeroQueue(actorId,action,steps,{deferTargets:true});
+   if(steps.slice(0,nextAttack).some(step=>
+      !['shield','retaliate','infuse'].includes(step?.type)))
+     throw Error('Unsupported interleaved attack instruction');
+   const prefix=steps.slice(0,nextAttack);
+   const effects=prefix.length?compileHeroQueue(actorId,action,prefix,
+     {deferTargets:true}).slice(0,-1):[];
+   const nextAction=copy(action);
+   nextAction.postAttackSteps=steps.slice(nextAttack+1);
+   return [...effects,{
+     type:'heroAttackTargetChoice',actorId,
+     effect:copy(steps[nextAttack]),action:nextAction
+   }];
  }
  function beginSequence(state,actorId,steps){
    validate(state,actorId,steps);
@@ -399,5 +423,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,compileHeroQueue,validTargets,optionalTargetIds,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,compileAttackContinuation,compileHeroQueue,validTargets,optionalTargetIds,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
