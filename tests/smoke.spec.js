@@ -2201,7 +2201,8 @@ test('F2 ordered hero guard and shield resolve once after interrupted queue relo
  await page.evaluate(()=>{
    const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
    s.phase='damage';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
-   s.players[0].picked=[0,1];s.players[0].guard=0;s.players[0].active=[];
+   s.players[0].picked=[0,1];s.players[0].guard=2;s.players[0].active=[];
+   s.journal.push('R1 · Vanguard gains 2 Guard.');
    s.combatQueue={version:1,owner:'hero',index:1,paused:true,pauseReason:'damage',events:[
      {type:'heroGuard',actorId:'p0',value:2},
      {type:'heroAbilityEffect',actorId:'p0',effect:{type:'shield',value:1,duration:'round'}},
@@ -2216,6 +2217,7 @@ test('F2 ordered hero guard and shield resolve once after interrupted queue relo
  await page.locator('#takeDamage').click();
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect(st.players[0].guard).toBe(2);
+ expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
  expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
  expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
  expect(st.combatQueue).toBeNull();
