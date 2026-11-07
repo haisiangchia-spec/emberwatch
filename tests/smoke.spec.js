@@ -1360,13 +1360,14 @@ test('multi-target monster chooses one saved position and separately attacks two
  expect(hits).toHaveLength(2);
  expect(new Set(hits.map(e=>e.targetId)).size).toBe(2);
  expect(hits.map(e=>e.targetId)).toContain(st.monsterTurnPlans['multi-archer'].targetId);
- expect(st.combatQueue.index).toBe(4);
+ const firstAttackIndex=st.combatQueue.events.findIndex(e=>e.type==='monsterAttack');
+ expect(st.combatQueue.index).toBe(firstAttackIndex+1);
  const firstHit=st.pendingDamage.heroIndex,draws=st.modifiers.monsters.discard.length;
  await page.reload();
  await page.locator('#takeDamage').click();
  await expect(page.locator('#damageChoice')).toBeVisible();
  st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
- expect(st.combatQueue.index).toBe(5);
+ expect(st.combatQueue.index).toBe(firstAttackIndex+2);
  expect(st.modifiers.monsters.discard.length).toBe(draws+1);
  expect(st.pendingDamage.heroIndex).not.toBe(firstHit);
  await page.reload();
