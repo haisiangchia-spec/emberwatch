@@ -166,3 +166,16 @@ assert.equal(abilities.healAmount({hp:10,maxHp:10},3),0);
 assert.throws(()=>abilities.healAmount({hp:8,maxHp:10},-1),/Invalid heal/);
 assert.throws(()=>abilities.healAmount({hp:8,maxHp:10},NaN),/Invalid heal/);
 console.log('F2 optional-step checkpoint and healing conformance assertions passed');
+
+
+const linkedSteps=abilities.linkedAttackSteps({
+ condition:'poison',followupType:'pull',asBasic:false
+});
+assert.deepEqual(linkedSteps,[{type:'condition',condition:'poison'},
+ {type:'pull',value:1}],'linked instructions preserve condition before forced displacement');
+assert.deepEqual(abilities.linkedAttackSteps({condition:'muddle',asBasic:true}),
+ [{type:'condition',condition:'muddle'}]);
+assert.deepEqual(abilities.linkedAttackSteps({followupType:'push',asBasic:true}),[]);
+assert.throws(()=>abilities.linkedAttackSteps({followupType:'teleport'}),/Unsupported linked movement/);
+assert.deepEqual(JSON.parse(JSON.stringify(linkedSteps)),linkedSteps);
+console.log('F2 ordered attack-linked step assertions passed');
