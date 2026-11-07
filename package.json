@@ -1,12 +1,12 @@
 {
   "name": "emberwatch-browser-tests",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Playwright browser regression tests for Emberwatch",
   "scripts": {
     "test": "playwright test",
     "test:smoke": "playwright test tests/smoke.spec.js",
-    "test:unit": "node test_v06.js && node tests/ability-engine.test.js"
+    "test:unit": "node test_v06.js && node tests/ability-engine.test.js && node tests/combat-queue.test.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0"
