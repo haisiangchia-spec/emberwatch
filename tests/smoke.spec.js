@@ -2513,3 +2513,60 @@ test('F2 structured Warden card compiles to persisted Guard then optional Heal',
  expect(finished.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 mandatory Heal uses compiled selected target and applies cleansing once',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:3,initiative:63}];s.turnIndex=0;
+  s.players[3].picked=[1,0];s.players[0].hp=6;
+  s.players[0].conditions={poison:true,wound:true};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="0"][data-r="4"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(9);
+ expect(st.players[0].conditions.poison).toBeUndefined();
+ expect(st.players[0].conditions.wound).toBeUndefined();
+ expect(st.elements.light).toBe(2);
+ expect(st.journal.filter(x=>x.includes('restores 3 HP'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 compiled Heal checkpoint reload does not duplicate prior effect',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:3,initiative:63}];s.turnIndex=0;
+  s.players[3].picked=[1,0];s.players[0].hp=6;
+  s.combatQueue={version:1,owner:'hero',index:0,paused:true,
+   pauseReason:'damage',events:[
+    {type:'heroAbilityEffect',actorId:'p3',
+      effect:{type:'heal',value:3,range:2},targetId:'p0'},
+    {type:'heroActionComplete',actorId:'p3',
+      action:{kind:'heal',value:3,range:2,which:'top',
+        cardIndex:1,asBasic:false,infuse:'light'}}
+   ]};
+  s.pendingDamage={heroIndex:3,amount:1,source:'Earlier effect',
+    condition:null,resume:'queue',attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(9);
+ expect(st.elements.light).toBe(2);
+ expect(st.combatQueue).toBeNull();
+ await page.reload();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].hp).toBe(9);
+ expect(st.journal.filter(x=>x.includes('restores 3 HP'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('LIGHT infused'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
