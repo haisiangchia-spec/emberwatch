@@ -1,3 +1,13 @@
+# Emberwatch v0.11.6 — Reactive Monster Routes
+
+Queued monster movement now checks its saved route against current hex occupancy, obstacles and icy slides before executing the move. If the route is stale, it searches again for a legal route toward the **already committed focus**, preferentially retaining the committed destination where possible. Equal-priority alternative attack hexes use the project's randomized tie policy. The new route replaces only the pending movement plan; completed queue effects and modifier draws are not replayed.
+
+The standalone `engine/reactive-route.js` decision helper has Node assertions in `tests/reactive-route.test.js`. The existing blocked-ice browser regression now checks for the reroute behavior rather than unconditional stopping.
+
+**Scope:** This is a pre-movement reactive checkpoint, not movement replanning between individual terrain steps, nor a complete multiplayer concurrency or official Frosthaven conformance implementation. CI/browser results for this commit should be checked separately.
+
+---
+
 # Emberwatch v0.11.5 — Atomic Icy Movement Stops
 
 The monster route planner now treats entering ice and sliding to the landing hex as one indivisible movement edge. It cannot select an intermediate ice hex as a planned stopping point, and it still respects remaining movement allowance, occupancy and difficult terrain. The new pure `engine/movement-stop.js` helper is integrated into the live game. `tests/movement-stop.test.js` adds endpoint regression cases and runs under `npm run test:unit`.
