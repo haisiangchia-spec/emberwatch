@@ -341,6 +341,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.4 optional targeted hero Heal
+
+- The shared optional hero effect pause now supports a target-selection step for **Heal**. Eligible allied figures are resolved through the existing movement-independent range and line-of-sight targeting helper, not arbitrary entered IDs.
+- The player selects a target from the live queue decision UI, which persists `targetId` in `pendingAbilityChoice` so reload restores the selection. Execute revalidates that target, heals through the existing `healUnit` path (including Poison/Wound cleansing) and advances the queue; Skip has no effect on the target.
+- The original Warden demo card *Aid the Fallen* bottom action demonstrates Guard 2 → optional Heal 2 (range 2), with the already-performed Guard not replayed after interruptions. Both execution and skip are browser-tested through reload.
+- This is a **targeted optional Heal slice**, not a general rule-complete interpreter for arbitrary optional target sequences, summon abilities, persistent effects or full official card libraries. F2 is still open.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
