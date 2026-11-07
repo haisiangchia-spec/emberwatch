@@ -301,6 +301,18 @@ Implemented:
 
 ---
 
+## F2 restart checkpoint — v0.12.0
+
+**Movement phase frozen:** v0.11.8 provides saved per-hex movement, icy slide chains, terrain damage and bounded rerouting. New movement changes require a documented conformance failure or a direct dependency of another milestone.
+
+**New F2 work:** `engine/abilities.js` now requires an explicit player choice before executing or skipping *optional* instructions in a serializable ability sequence. Skips advance the instruction cursor without applying the effect, and remain recorded across JSON save/reload. The shared `healAmount` calculation now drives live queued monster self-healing as well as generic ability healing, with capped recovery and defensive input validation. The interpreter unit suite checks optional automatic shield, heal and attack choices across serialized checkpoints.
+
+**Milestone F2 is not complete:** The live UI still uses specialized hero card action handlers, and the generic sequential interpreter is not the sole execution engine. Required follow-ups: integrate ordered hero card ability steps into the combat queue, ensure every optional/mandatory decision can pause and resume, unify condition/effect timing and duration, support a full content schema with richer action families, then test parity through browser save/reload and combat interrupts. Do **not** claim F2 closure until these are demonstrably integrated and conformance-tested.
+
+**Remaining sequence:** F2 complete -> F3 combat modifiers/perks/defenses -> F5 monster specials/summons -> F6 class and monster content licensing/import -> F7 authoritative four-player synchronization; audit F1/F4 edge cases only where concrete tests fail.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
