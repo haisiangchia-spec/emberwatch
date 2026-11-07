@@ -526,7 +526,7 @@ function startMonsterCombatQueue(type){
    if(Array.isArray(card.abilities)&&card.abilities.length){
      events.push({type:'monsterStart',actorId:e.id,monsterType:type});
      for(const [stepIndex,step] of card.abilities.entries())
-       events.push({type:step.type==='move'?'monsterMove':step.type==='attack'?'monsterAttack':'monsterFinish',
+       events.push({type:step.type==='move'?'monsterMove':step.type==='attack'?'monsterAttack':'monsterEffect',
                     actorId:e.id,monsterType:type,stepIndex});
      events.push({type:'monsterFinish',actorId:e.id,monsterType:type});
    }else events.push({type:'monsterTurn',actorId:e.id,monsterType:type})
@@ -622,6 +622,9 @@ function runCombatQueue(){
      }
      continue
    }
+   if(event.type==='monsterEffect'){
+     resolveQueuedMonsterEffect(event);continue
+   }
    if(event.type==='monsterFinish'){
      finishQueuedMonsterStep(event);continue
    }
@@ -654,7 +657,7 @@ function beginQueuedMonsterStep(event){
  const plan=monsterPlan(enemy);
  state.monsterTurnPlans[event.actorId]=plan?.target?
    {skip:false,targetId:plan.target.id,stop:plan.stop,spec:plan.spec}:
-   {skip:true};
+   {skip:false,targetId:null,stop:null,spec:{move:0,attack:0,range:1}};
 }
 function moveQueuedMonsterStep(event){
  const plan=state.monsterTurnPlans[event.actorId];
@@ -684,6 +687,23 @@ function attackQueuedMonsterStep(event){
    resume:'queue',sourceId:enemy.id,attack:true,condition:step.condition,
    miss:roll.mod==='null'
  })
+}
+function resolveQueuedMonsterEffect(event){
+ const plan=state.monsterTurnPlans[event.actorId];
+ if(!plan||plan.skip)return;
+ const enemy=state.enemies.find(e=>e.id===event.actorId&&e.hp>0);
+ const step=state.monsterReveals[event.monsterType]?.abilities?.[event.stepIndex];
+ if(!enemy||!step)return;
+ if(step.type==='heal'){
+   const amount=healUnit(enemy,step.value||0);
+   log(enemy.name+' heals '+amount+' HP.')
+ }else if(step.type==='shield'||step.type==='retaliate'){
+   activateTacticalEffects(enemy,[step])
+ }else if(step.type==='condition'){
+   if(step.condition)addCondition(enemy,step.condition)
+ }else if(step.type==='infuse'){
+   if(step.element)infuse(step.element)
+ }else throw Error('Unsupported scripted monster effect: '+step.type)
 }
 function finishQueuedMonsterStep(event){
  const enemy=state.enemies.find(e=>e.id===event.actorId);
