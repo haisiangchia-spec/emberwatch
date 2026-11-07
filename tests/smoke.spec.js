@@ -1306,3 +1306,30 @@ test('immobilized adjacent ranged monster attacks with disadvantage',async ({pag
  expect(st.modifiers.monsters.discard.length).toBe(2);
  expect(errors).toEqual([]);
 });
+
+test('explicit ranged Range 1 attack suffers adjacency disadvantage without retreat',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:1,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20}];
+  s.turnIndex=0;s.players[1].picked=[0,1];
+  for(let i=0;i<4;i++)if(i!==1){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'range-one',name:'Ash Archer',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.traps=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Archer':{name:'Close Shot',initiative:20,abilities:[
+   {type:'move',value:2},{type:'attack',value:3,range:1,ranged:true}
+  ]}};
+  s.modifiers.monsters.draw=[-2,2];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([1,3]);
+ expect(st.pendingDamage.amount).toBe(1);
+ expect(st.modifiers.monsters.discard.length).toBe(2);
+ expect(errors).toEqual([]);
+});
