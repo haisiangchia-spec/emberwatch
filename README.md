@@ -1,3 +1,24 @@
+# Emberwatch v0.7 — Campaign Progression
+
+Emberwatch is an original four-character cooperative HTML5 tactical prototype, inspired by the general style of tactical dungeon-crawling board games. The current version adds a persistent campaign layer on top of the Cinder Vault scenario.
+
+## New in v0.7
+
+- **Campaign Hub:** Use the header button to view all four heroes' levels, XP, gold, equipment and enhanced cards.
+- **Persistent progression:** The campaign is stored in the existing `emberwatch_save_v1` local save and included in exported saves. Legacy v0.6 saves receive default level-1 campaign records.
+- **XP and levels:** Heroes gain 1 XP each time their attack deals positive damage. On victory, each hero receives 5 XP. Level thresholds are `8 + 5 × current level` XP; each new level grants +2 maximum HP in subsequent scenarios, up to level 9.
+- **Gold and crafting:** Collected coins also add gold to that hero's persistent campaign purse. Victory grants 3 gold per hero and 2 shared crafting materials.
+- **Gear:** Tempered Edge (6 gold) gives Attack +1, Trail Boots (5 gold) gives Move +1, and Ironweave Vest (7 gold) gives 1 Guard at the start of the next scenario. These are permanent, non-stackable purchases.
+- **Enhanced cards:** Spend 2 shared materials to upgrade one of the owner's six ability cards; its selected action receives +1 numerical power. Each card can be enhanced once.
+- **Next scenario:** The Campaign Hub can start a fresh Cinder Vault mission while keeping campaign progress and restoring the characters with level-scaled HP and armor bonuses.
+- **Limits:** The campaign currently repeats a single scenario; it does not yet have a world map or multiple linked story missions. Campaign purchases are intentionally disabled in online rooms until server-side transactions and seat ownership are hardened. Firebase gameplay itself remains experimental.
+
+## Testing
+
+GitHub Actions runs Chromium Playwright smoke tests after each push. Tests cover local-game loading, four-character card selection, turn persistence, scenario reset, and campaign purchase / advancement preservation.
+
+---
+
 # Emberwatch — HTML5 co-op tactical prototype
 
 This is an ORIGINAL game inspired by the genre of Frosthaven and Gloomhaven. It contains no Frosthaven assets, official character names, narrative, maps, or card text, and is not a complete Frosthaven rules implementation.
