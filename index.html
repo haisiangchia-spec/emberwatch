@@ -9,7 +9,7 @@ const CARD_LIBRARY=[
 [{n:'Shield Rush',i:18,condition:'immobilize',t:['attack',3,1],b:['move',3],desc:'Attack 3 · range 1 / Move 3'},{n:'Brace',i:51,infuse:'earth',t:['attack',2,1],b:['guard',2],tactical:{b:[{type:'shield',value:1,duration:'round'}]},desc:'Attack 2 / Guard 2'},{n:'Iron Sweep',i:39,condition:'disarm',t:['attack',4,1],b:['move',2],tactical:{t:[{type:'push',value:1}]},desc:'Attack 4 / Move 2'},{n:'Forward March',i:26,t:['attack',2,1],b:['move',4],desc:'Attack 2 / Move 4'},{n:'Hold the Line',i:72,t:['heal',3,1],b:['guard',3],tactical:{b:[{type:'shield',value:1,duration:'round',optional:true}]},desc:'Heal 3 / Guard 3 (optional Shield 1)'},{n:'Hammerfall',i:62,t:['attack',5,1],b:['move',2],desc:'Attack 5 / Move 2'}],
 [{n:'Quick Shot',i:12,condition:'muddle',t:['attack',2,4],b:['move',3],desc:'Ranged Attack 2 / Move 3'},{n:'Mark Quarry',i:23,condition:'poison',t:['attack',3,3],b:['move',2],tactical:{t:[{type:'pull',value:1}]},desc:'Ranged Attack 3 / Move 2'},{n:'Trail Step',i:16,infuse:'air',t:['attack',2,3],b:['jump',4],desc:'Ranged Attack 2 / Jump 4'},{n:'Piercing Arrow',i:46,t:['attack',4,3],b:['move',2],desc:'Ranged Attack 4 / Move 2'},{n:'Field Dressing',i:69,t:['heal',3,2],b:['move',3],desc:'Heal 3 range 2 / Move 3'},{n:'Last Light',i:34,t:['attack',3,4],b:['guard',2],desc:'Ranged Attack 3 / Guard 2'}],
 [{n:'Spark Lance',i:29,infuse:'fire',t:['attack',3,3],b:['move',2],desc:'Ranged Attack 3 / Move 2'},{n:'Arc Pulse',i:58,consume:'fire',condition:'stun',t:['attack',4,2],b:['move',2],tactical:{t:[{type:'areaAttack',area:[{q:0,r:0},{q:1,r:-1}]}]},desc:'Ranged Attack 4 / Move 2'},{n:'Kinetic Step',i:21,t:['attack',2,3],b:['fly',4],desc:'Ranged Attack 2 / Fly 4'},{n:'Restoration',i:74,infuse:'light',t:['heal',4,3],b:['move',2],desc:'Heal 4 range 3 / Move 2'},{n:'Ember Bolt',i:31,consume:'fire',t:['attack',3,4],b:['guard',2],desc:'Ranged Attack 3 / Guard 2'},{n:'Static Bloom',i:43,t:['attack',2,4],b:['move',3],tactical:{t:[{type:'attackTargets',value:2}]},desc:'Ranged Attack 2 / Move 3'}],
-[{n:'Thorn Strike',i:27,condition:'wound',t:['attack',3,1],b:['move',3],desc:'Attack 3 / Move 3'},{n:'Aid the Fallen',i:63,infuse:'light',t:['heal',3,2],b:['guard',2],desc:'Heal 3 range 2 / Guard 2'},{n:'Oakheart',i:71,infuse:'earth',t:['attack',2,1],b:['guard',4],tactical:{b:[{type:'retaliate',value:1,range:1,duration:'round'}]},desc:'Attack 2 / Guard 4'},{n:'Vine Reach',i:33,consume:'earth',condition:'immobilize',t:['attack',3,2],b:['move',2],desc:'Attack 3 range 2 / Move 2'},{n:'Wild Sprint',i:15,t:['attack',2,1],b:['move',4],desc:'Attack 2 / Move 4'},{n:'Briar Crash',i:47,t:['attack',4,1],b:['move',2],desc:'Attack 4 / Move 2'}]
+[{n:'Thorn Strike',i:27,condition:'wound',t:['attack',3,1],b:['move',3],desc:'Attack 3 / Move 3'},{n:'Aid the Fallen',i:63,infuse:'light',t:['heal',3,2],b:['guard',2],tactical:{b:[{type:'heal',value:2,range:2,optional:true}]},desc:'Heal 3 range 2 / Guard 2 + optional Heal 2'},{n:'Oakheart',i:71,infuse:'earth',t:['attack',2,1],b:['guard',4],tactical:{b:[{type:'retaliate',value:1,range:1,duration:'round'}]},desc:'Attack 2 / Guard 4'},{n:'Vine Reach',i:33,consume:'earth',condition:'immobilize',t:['attack',3,2],b:['move',2],desc:'Attack 3 range 2 / Move 2'},{n:'Wild Sprint',i:15,t:['attack',2,1],b:['move',4],desc:'Attack 2 / Move 4'},{n:'Briar Crash',i:47,t:['attack',4,1],b:['move',2],desc:'Attack 4 / Move 2'}]
 ];
 // Each monster family draws one shared ability card each round; separate discard piles reshuffle.
 // All abilities are original Emberwatch content and deliberately use simplified actions.
@@ -674,15 +674,38 @@ function executeQueuedHeroEffect(actor,effect){
    log(actor.name+' gains '+resolved.type+' '+resolved.value+
      ' until '+resolved.duration+'.');
 }
+function optionalHeroTargets(pending){
+ const actor=state.players.find(p=>p.id===pending?.actorId&&p.hp>0&&!p.exhausted);
+ if(!actor||pending.effect?.type!=='heal')return [];
+ return targets(actor,pending.effect.range??1,'heal');
+}
+function chooseOptionalHeroTarget(id){
+ const pending=state.pendingAbilityChoice,q=state.combatQueue;
+ if(!pending||q?.pauseReason!=='optionalAbility'||pending.effect.type!=='heal')return;
+ if(!optionalHeroTargets(pending).some(p=>p.id===id))return;
+ pending.targetId=id;
+ commit();
+}
 function resolveOptionalHeroEffect(execute){
  const pending=state.pendingAbilityChoice,q=state.combatQueue;
  if(!pending||!q?.paused||q.pauseReason!=='optionalAbility')return;
  if(pending.queueIndex!==q.index-1||q.events[pending.queueIndex]?.type!=='heroAbilityEffect')
    throw Error('Optional ability checkpoint no longer matches combat queue');
  const actor=state.players.find(p=>p.id===pending.actorId&&p.hp>0&&!p.exhausted);
+ let target=null;
+ if(execute&&actor&&pending.effect.type==='heal'){
+   target=optionalHeroTargets(pending).find(p=>p.id===pending.targetId);
+   if(!target){commit();return}
+ }
  state.pendingAbilityChoice=null;
- if(execute&&actor)executeQueuedHeroEffect(actor,pending.effect);
- else log((actor?.name||'Hero')+' skips optional '+pending.effect.type+'.');
+ if(execute&&actor){
+   if(target){
+     // Healing (including cleansing) shares the live effect resolution path
+     // without changing attack modifiers or any already committed guard.
+     const amount=healUnit(target,pending.effect.value||0);
+     log(actor.name+' restores '+amount+' HP to '+target.name+' (optional).');
+   }else executeQueuedHeroEffect(actor,pending.effect);
+ }else log((actor?.name||'Hero')+' skips optional '+pending.effect.type+'.');
  resumeCombatQueue();
 }
 function resumeCombatQueue(){
@@ -1410,8 +1433,12 @@ function render(){if(!state)return;if(state.phase==='act'&&state.pendingHeroChoi
 if(state.pendingAbilityChoice&&state.combatQueue?.paused&&
  state.combatQueue.pauseReason==='optionalAbility'){
  const choice=state.pendingAbilityChoice,actor=state.players.find(p=>p.id===choice.actorId);
- const effect=choice.effect;
- a.innerHTML=`<div id="optionalAbilityChoice"><h3>Optional ability · ${esc(actor?.name||'Hero')}</h3><p>Activate ${esc(effect.type)} ${Number(effect.value||0)} or skip this optional step?</p><div class="controls"><button id="executeAbility" class="primary">Activate ability</button><button id="skipAbility">Skip ability</button></div></div>`;
+ const effect=choice.effect,healing=effect.type==='heal';
+ const candidates=healing?optionalHeroTargets(choice):[];
+ const selected=healing?candidates.find(p=>p.id===choice.targetId):null;
+ a.innerHTML=`<div id="optionalAbilityChoice"><h3>Optional ability · ${esc(actor?.name||'Hero')}</h3><p>Activate ${esc(effect.type)} ${Number(effect.value||0)} or skip this optional step?</p>${healing?`<div class="section"><p>Select a friendly target (range ${Number(effect.range??1)}):</p><div class="controls">${candidates.map(p=>`<button class="small" data-optional-target="${esc(p.id)}">${esc(p.name)} · ${p.hp}/${p.maxHp} HP</button>`).join('')}</div></div>`:''}<div class="controls"><button id="executeAbility" class="primary" ${healing&&!selected?'disabled':''}>Activate ability</button><button id="skipAbility">Skip ability</button></div></div>`;
+ a.querySelectorAll('[data-optional-target]').forEach(b=>
+   b.onclick=()=>chooseOptionalHeroTarget(b.dataset.optionalTarget));
  $('executeAbility').onclick=()=>resolveOptionalHeroEffect(true);
  $('skipAbility').onclick=()=>resolveOptionalHeroEffect(false);
  return
