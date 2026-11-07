@@ -99,7 +99,7 @@ jobs:
             await github.rest.repos.createOrUpdateFileContents({
               owner, repo, path: filePath, branch,
               message: `Report CI results for ${context.sha.slice(0, 8)}`,
-              content: Buffer.from(JSON.stringify(result, null, 2) + '\\n').toString('base64'),
+              content: Buffer.from(JSON.stringify(result, null, 2) + '\n').toString('base64'),
               ...(existingSha ? {sha: existingSha} : {})
             });
             core.info(JSON.stringify(result));
