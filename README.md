@@ -1,3 +1,11 @@
+# Emberwatch v0.13.4 — Consecutive Attacks With Target Checkpoints
+
+A single structured hero ability can resolve two or three consecutive Attack instructions, selecting a valid target separately after each completed hit, linked effect and retaliation. Every checkpoint is serializable and reload-safe; optional defensive follow-ups resume only after the final attack. The existing demo card abilities are unchanged.
+
+F2 is not complete: arbitrary mixed/repeated effects and the full class/monster abilities remain outstanding.
+
+---
+
 # Emberwatch v0.13.3 — Move → Attack With Saved Target Selection
 
 The structured hero action compiler can queue Move followed by a terminal Attack. It resolves movement using the unchanged per-hex terrain engine, then pauses for enemy target selection from the hero's new location. The selection survives reload, is revalidated before the attack, and can complete without a target when no enemy is eligible. Regression tests cover checkpoint persistence and replay prevention.
