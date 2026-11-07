@@ -351,3 +351,43 @@ test('short-rest redraw never sacrifices a card from the untouched hand',async (
  expect([3,4,5]).toContain(p.lost[0]);
  expect([0,1,2]).not.toContain(p.lost[0]);
 });
+
+test('structured Brace shield is activated in battle and expires at round end',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.some(e=>e.type==='shield'&&e.value===1)).toBe(true);
+ await page.locator('#endTurn').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.some(e=>e.type==='shield')).toBe(false);
+});
+
+test('structured Warden Retaliate activates in battle and hurts adjacent attacker',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:3,initiative:27}];s.turnIndex=0;
+  s.players[3].picked=[0,2];localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[3].active.some(e=>e.type==='retaliate'&&e.value===1)).toBe(true);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.players[3].q=1;s.players[3].r=5;
+  s.enemies=[{id:'test-monster',name:'Ash Raider',hp:6,maxHp:6,q:2,r:5,conditions:{}}];
+  s.pendingDamage={heroIndex:3,amount:2,source:'Ash Raider',condition:null,resume:'manual',attack:true,sourceId:'test-monster'};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(5);
+});
