@@ -309,6 +309,10 @@ function clickHex(q,r){
    const target=state.enemies.find(e=>e.q===q&&e.r===r);if(!target)return;
    state.combatQueue=window.EmberwatchCombatQueue.create('hero',[
      {type:'heroAttackHit',actorId:actor.id,targetId:target.id,action:clone(a)},
+     ...window.EmberwatchAbilities.linkedAttackSteps(a).map(step=>({
+       type:'heroAttackLinked',actorId:actor.id,targetId:target.id,
+       step:clone(step),action:clone(a)
+     })),
      {type:'heroAttackPostHit',actorId:actor.id,targetId:target.id,action:clone(a)}
    ]);
    runCombatQueue();return
@@ -682,11 +686,28 @@ function runCombatQueue(){
      const damage=dealDamage(target,roll.damage,roll.mod==='null');
      if(damage>0)awardXP(state.players.indexOf(actor),1);
      log(actor.name+' attacks '+target.name+' for '+damage+' ('+modifierLabel(roll.mod)+(roll.second!==undefined?' vs '+modifierLabel(roll.second):'')+').');
-     if(action.condition&&roll.mod!=='null'&&target.hp>0)addCondition(target,action.condition);
+     const queue=state.combatQueue;
+     const linked=queue.events[queue.index]?.type==='heroAttackLinked'&&
+       queue.events[queue.index].actorId===actor.id&&
+       queue.events[queue.index].targetId===target.id;
+     // The hit is resolved exactly once. Save the null/miss result on the
+     // queued linked instructions so reload cannot draw another modifier.
+     if(linked){
+       for(let i=queue.index;i<queue.events.length;i++){
+         const pending=queue.events[i];
+         if(pending.type!=='heroAttackLinked'||pending.actorId!==actor.id||
+            pending.targetId!==target.id)break;
+         pending.miss=roll.mod==='null';
+       }
+     }else if(action.condition&&roll.mod!=='null'&&target.hp>0){
+       // Compatibility for pre-v0.12.2 combat queue snapshots.
+       addCondition(target,action.condition);
+     }
      if(target.hp<=0){
        state.enemies=state.enemies.filter(e=>e!==target);state.loot.push([target.q,target.r]);
        log(target.name+' defeated!')
-     }else if(!action.asBasic&&action.followupType){
+     }else if(!linked&&!action.asBasic&&action.followupType){
+       // Compatibility for previously saved two-event attack queues.
        const valid=availableForcedHexes(actor,target,action.followupType);
        if(valid.length){
          state.pendingHeroChoice={actorId:actor.id,targetId:target.id,
@@ -697,6 +718,26 @@ function runCombatQueue(){
          commit();return
        }
      }
+     continue
+   }
+   if(event.type==='heroAttackLinked'){
+     const actor=state.players.find(p=>p.id===event.actorId&&p.hp>0&&!p.exhausted);
+     const target=state.enemies.find(e=>e.id===event.targetId&&e.hp>0);
+     if(!actor||!target)continue;
+     const step=event.step;
+     if(step.type==='condition'){
+       if(!event.miss)addCondition(target,step.condition);
+     }else if(step.type==='push'||step.type==='pull'){
+       const valid=availableForcedHexes(actor,target,step.type);
+       if(valid.length){
+         state.pendingHeroChoice={actorId:actor.id,targetId:target.id,
+            action:{...event.action,kind:'forced',forcedType:step.type,
+               forcedTargetId:target.id,valid}};
+         ui.actionMode=clone(state.pendingHeroChoice.action);
+         state.combatQueue=window.EmberwatchCombatQueue.pause(state.combatQueue,'forcedMove');
+         commit();return
+       }
+     }else throw Error('Unsupported linked hero ability: '+step.type);
      continue
    }
    if(event.type==='heroAttackPostHit'){
