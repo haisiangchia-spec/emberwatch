@@ -387,6 +387,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.9 ordered mixed abilities and mandatory target checkpoints
+
+- Generic compiler now supports `deferTargets:true` for a required Heal instruction in a mixed ordered sequence. It emits `heroGuard` -> `heroAbilityEffect` with `needsTarget:true` -> `heroActionComplete`; earlier compiler use without deferred targeting still requires explicit target ID.
+- The live hero queue pauses at `abilityTarget` and stores `pendingAbilityChoice` and the event index. The existing targeting UI now offers valid friendly figures without a Skip button for mandatory effects; the chosen target persists across reload and is checked again before execution.
+- The original *Last Light* bottom ability demonstrates **Guard 2 then required Heal 1**, selected in normal gameplay. Prior Guard is not repeated when the player resumes after an interruption. Browser tests cover target selection and reload, invalidated targets, and correct completion.
+- **F2 not closed:** mixed sequences containing attacks, movement and advanced class effects are still unsupported by the generic compiler. Further work must handle attack continuation semantics and preserve action timing without replay.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
