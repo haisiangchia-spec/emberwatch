@@ -187,11 +187,14 @@ function setupLocal(){mode='offline';seat=0;roomCode='';if(unsubscribe){unsubscr
 function resetGame(){if(!confirm('Reset the shared scenario for everyone in this room? Campaign progress will remain.'))return;state=makeGame(state?.campaign);resetUI();commit()}
 function hx(q,r){return [76+q*88+(r%2)*44,64+r*88]};function vertexes(x,y,r=49){return Array.from({length:6},(_,i)=>{let a=Math.PI/3*i+Math.PI/6;return(x+r*Math.cos(a)).toFixed(1)+','+(y+r*Math.sin(a)).toFixed(1)}).join(' ')}
 function drawBoard(){const svg=$('board');let out='';for(let r=0;r<6;r++)for(let q=0;q<8;q++){
- let [x,y]=hx(q,r),visible=discovered(q,r),blocked=rock(q,r),isWall=wall(q,r),isDifficult=difficult(q,r),u=visible?unitAt(q,r):null,loot=visible&&state.loot.some(t=>t[0]===q&&t[1]===r),selected=visible&&ui.actionMode&&ui.actionMode.valid?.some(v=>v.q===q&&v.r===r),door=doorAt(q,r),seal=state.scenario?.kind==='vault'&&q===5&&r===0,exit=state.scenario?.kind==='vault'&&q===7&&r===5;
- let fill=!visible?'#0d1922':isWall?'#181e29':blocked?'#374248':selected?'#526b58':door?'#725832':isDifficult?'#8a6b3d':((q+r)%2?'#40565b':'#344c53');out+=`<polygon class="tile ${selected?'selected':''}" points="${vertexes(x,y)}" fill="${fill}" data-q="${q}" data-r="${r}"/>`;
+ let [x,y]=hx(q,r),visible=discovered(q,r),blocked=rock(q,r),isWall=wall(q,r),isDifficult=difficult(q,r),isIcy=contains(state.icy,q,r),isTrap=contains(state.traps,q,r),isHazard=contains(state.hazardous,q,r),u=visible?unitAt(q,r):null,loot=visible&&state.loot.some(t=>t[0]===q&&t[1]===r),selected=visible&&ui.actionMode&&ui.actionMode.valid?.some(v=>v.q===q&&v.r===r),door=doorAt(q,r),seal=state.scenario?.kind==='vault'&&q===5&&r===0,exit=state.scenario?.kind==='vault'&&q===7&&r===5;
+ let fill=!visible?'#0d1922':isWall?'#181e29':blocked?'#374248':selected?'#526b58':door?'#725832':isIcy?'#316c88':isTrap?'#785047':isHazard?'#804c38':isDifficult?'#8a6b3d':((q+r)%2?'#40565b':'#344c53');out+=`<polygon class="tile ${selected?'selected':''}" points="${vertexes(x,y)}" fill="${fill}" data-q="${q}" data-r="${r}"/>`;
  if(!visible){out+=`<text x="${x}" y="${y+6}" font-size="20" fill="#3b535e" text-anchor="middle" pointer-events="none">?</text>`;continue}
  if(door)out+=`<text x="${x}" y="${y+9}" font-size="29" fill="#f0bd69" text-anchor="middle" pointer-events="none">${state.scenario.revealed.includes(door.reveal)?'⌁':'🔒'}</text>`;
  if(isWall)out+=`<text x="${x}" y="${y+9}" font-size="32" fill="#c4b5a2" text-anchor="middle" pointer-events="none">▰</text>`;
+ if(isIcy)out+=`<text x="${x}" y="${y+8}" font-size="26" fill="#c0ebfa" text-anchor="middle" pointer-events="none">❄</text>`;
+ if(isTrap)out+=`<text x="${x}" y="${y+8}" font-size="25" fill="#ffde9e" text-anchor="middle" pointer-events="none">⚠</text>`;
+ if(isHazard)out+=`<text x="${x}" y="${y+8}" font-size="24" fill="#ffd6a1" text-anchor="middle" pointer-events="none">♨</text>`;
  if(blocked)out+=`<text x="${x}" y="${y+8}" font-size="32" fill="#899498" text-anchor="middle" pointer-events="none">◆</text>`;
  if(seal)out+=`<text x="${x}" y="${y+8}" font-size="27" fill="#fada83" text-anchor="middle" pointer-events="none">${state.scenario.seal?'✓':'✦'}</text>`;
  if(exit)out+=`<text x="${x}" y="${y+10}" font-size="28" fill="#9de6cb" text-anchor="middle" pointer-events="none">⬡</text>`;
