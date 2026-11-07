@@ -1749,6 +1749,7 @@ test('forced Push into chained ice automatically completes all sliding hexes',as
   s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0];
   s.modifiers.heroes[0].discard=[];
   s.enemies=[{id:'ice-pushed',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
   s.icy=[[2,4],[3,4]];s.traps=[];s.hazardous=[];
   localStorage.setItem(key,JSON.stringify(s));
  });
