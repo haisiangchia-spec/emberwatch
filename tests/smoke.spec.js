@@ -281,3 +281,73 @@ test('taking damage applies damage and can exhaust the hero',async ({page})=>{
  const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
  expect(p.hp).toBe(0);expect(p.exhausted).toBe(true);
 });
+
+test('Wound damage at hero turn start can be prevented without applying twice',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;s.order=[{type:'player',id:1,initiative:12},{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[1].picked=[0,1];s.players[0].picked=[0,1];s.players[0].hp=7;
+  s.players[0].conditions={wound:true};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toContainText('Wound');
+ await expect(page.locator('#damageChoice')).toContainText('1');
+ await page.locator('#damageChoice input[data-pool="hand"][value="2"]').check();
+ await page.locator('#loseHand').click();
+ await expect(page.locator('#damageChoice')).toHaveCount(0);
+ await expect(page.locator('#endTurn')).toBeVisible();
+ const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.hp).toBe(7);
+ expect(p.lost).toContain(2);
+ expect(p.conditions.wound).toBe(true);
+});
+
+test('Steel Buckler can be spent once and becomes available after a long rest',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.campaign.heroes[0].gear.push('buckler');
+  s.phase='act';s.round=2;s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+  s.players[0].picked=[0,1];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#useBuckler').click();
+ await expect(page.locator('#useBuckler')).toBeDisabled();
+ let p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.spentItems).toContain('buckler');
+ expect(p.guard).toBe(2);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.order=[{type:'player',id:1,initiative:12},{type:'player',id:0,initiative:99}];s.turnIndex=0;
+  s.players[1].picked=[0,1];s.players[0].resting=true;
+  s.players[0].picked=[];s.players[0].discard=[4,5];s.players[0].hand=[0,1,2,3];s.players[0].longRestLoss=5;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.spentItems).toEqual([]);
+ expect(p.lost).toContain(5);
+ expect(p.hand).toContain(4);
+});
+
+test('short-rest redraw never sacrifices a card from the untouched hand',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='roundEnd';s.roundEndIndex=0;s.round=2;
+  s.players[0].hand=[0,1,2];s.players[0].discard=[3,4,5];s.players[0].hp=10;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#restNow').click();
+ await page.locator('#redrawRest').click();
+ const p=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0]);
+ expect(p.lost).toHaveLength(1);
+ expect([3,4,5]).toContain(p.lost[0]);
+ expect([0,1,2]).not.toContain(p.lost[0]);
+});
