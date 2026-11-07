@@ -1,8 +1,13 @@
-# Emberwatch v0.10.9 — Automatic Random Tie Resolution
+# Emberwatch v0.11.0 — Terrain Entry and Forced Movement
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Added a shared terrain entry resolver for traps and hazardous terrain. Trap damage scales by scenario level and removes the trap; hazardous tiles persist and damage on re-entry. Flying and Jump exemptions are supported at the rules-engine level.
+- Monster movement now checks each traversed hex for terrain effects, and a monster killed en route cannot perform its queued attack. Hero Push/Pull onto a dangerous tile triggers the same resolver.
+- The live original scenario still has no default placed hazards. Hero intermediate movement and damage-prevention decisions on terrain are not yet fully implemented.
+- Chromium browser regression suite: **56 passing tests** on the latest code-bearing run.
 
 - **Intentional rule exception:** whenever several monster choices are equally valid after applying normal tactical priorities, Emberwatch randomly selects and executes one. No party vote or manual tie-break is required.
 - This includes tied monster focus targets, attack hexes, retreat destinations, additional attack targets and attack order. The chosen action is saved before execution so reloads never reroll completed choices.
