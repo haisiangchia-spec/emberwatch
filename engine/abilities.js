@@ -100,6 +100,13 @@
      {type:'attack',value:Math.max(0,(profile.attack||0)+(card.attack||0)),range:Math.max(1,(profile.range||1)+(card.range||0)),condition:card.condition||null}
    ];
  }
+ // Pure HP recovery used by both scripted and interactive actors.
+ // No implicit cleansing or extra effects: those remain separate instructions.
+ function healAmount(unit,value){
+   if(!unit||!Number.isFinite(unit.hp)||!Number.isFinite(unit.maxHp)||
+      !Number.isFinite(value)||value<0)throw Error('Invalid heal input');
+   return Math.max(0,Math.min(value,unit.maxHp-unit.hp));
+ }
  function beginSequence(state,actorId,steps){
    validate(state,actorId,steps);
    return {state:copy(state),cursor:{actorId,steps:copy(steps),index:0,events:[]},done:false};
@@ -110,7 +117,15 @@
    if(data.index>=data.steps.length)return {state:now,cursor:null,done:true,events:data.events||[]};
    const step=data.steps[data.index];
    const requiresChoice=['attack','areaAttack','heal','condition','push','pull','move'].includes(step.type);
-   if(requiresChoice&&choice===undefined)return {state:now,cursor:data,done:false,awaiting:{step:data.index,type:step.type}};
+   if((requiresChoice||step.optional)&&choice===undefined)
+     return {state:now,cursor:data,done:false,
+       awaiting:{step:data.index,type:step.type,optional:!!step.optional}};
+   if(step.optional&&choice?.skip===true){
+     data.events.push({type:'skipped',stepIndex:data.index});
+     data.index++;
+     return {state:now,cursor:data.index<data.steps.length?data:null,
+       done:data.index>=data.steps.length,events:copy(data.events)};
+   }
    const outcome=apply(now,data.actorId,[step],[choice||{}],opts);
    data.events.push(...outcome.events.map(event=>({...event,stepIndex:data.index})));
    data.index++;
@@ -199,7 +214,7 @@
            events.push({type:'retaliate',actor:id,target:actorId,damage:ret});
          }
        }else if(type==='heal'){
-         const amount=Math.min(step.value||0,target.maxHp-target.hp);
+         const amount=healAmount(target,step.value||0);
          target.hp+=amount;events.push({type:'heal',target:id,amount});
        }else if(type==='condition'){
          target.conditions??={};target.conditions[step.condition]=true;
@@ -217,5 +232,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,healAmount,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
