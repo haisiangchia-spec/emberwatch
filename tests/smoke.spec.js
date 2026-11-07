@@ -2026,3 +2026,39 @@ test('monster may cross an allied figure on ordinary steps but not end on one',a
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('hero reroutes after interrupted damage without replaying a consumed trap',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:20}];s.turnIndex=0;
+  s.players[0].picked=[0,3];s.players[0].q=1;s.players[0].r=3;
+  for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.scenario.revealed=[0,1,2];s.traps=[];s.hazardous=[];
+  s.walls=[];s.rocks=[[2,3]];s.difficult=[];s.icy=[];s.enemies=[];
+  s.combatQueue={version:1,owner:'hero',index:1,paused:true,pauseReason:'terrainDamage',
+   events:[
+    {type:'heroMoveStep',actorId:'p0',hex:{q:1,r:3},
+     paidCost:1,movementMode:'walk',destination:{q:3,r:3},finalStep:false},
+    {type:'heroMoveStep',actorId:'p0',hex:{q:2,r:3},
+     movementMode:'walk',destination:{q:3,r:3},finalStep:false},
+    {type:'heroMoveStep',actorId:'p0',hex:{q:3,r:3},
+     movementMode:'walk',destination:{q:3,r:3},finalStep:true},
+    {type:'heroActionComplete',actorId:'p0',action:{
+      kind:'move',which:'bottom',cardIndex:0,asBasic:true,value:4}}
+   ]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Terrain',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.players[0].q,st.players[0].r]).toEqual([3,3]);
+ expect(st.journal.filter(x=>x.includes('reroutes with 3 movement points'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('enters trap'))).toHaveLength(0);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
