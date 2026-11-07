@@ -1,3 +1,11 @@
+# Emberwatch v0.12.2 — Queued Hero Attack Linked Effects
+
+Hero attacks now save the steps **Hit → linked condition → optional Push/Pull → Post-Hit Retaliate** as separate serializable combat events. The common ability module normalizes the ordered linked steps, and the attack modifier result is copied onto the queued linked steps before they execute. Reloading during a Push/Pull prompt cannot redraw the attack. Null/miss modifiers suppress linked conditions but do not automatically suppress voluntary displacement. Legacy interrupted two-event attacks remain compatible.
+
+This is a specific F2 integration milestone, **not** a complete generic class-action interpreter. F2 remains open pending complete hero ability sequences, optional target decisions, effect timing and comprehensive rule conformance.
+
+---
+
 # Emberwatch v0.12.1 — F2 Ordered Hero Defensive Abilities
 
 Live hero Guard actions now execute as `heroGuard` followed by structured `heroAbilityEffect` events and `heroActionComplete` in the serializable combat queue. The latter effects are resolved by the shared `EmberwatchAbilities.apply` interpreter (currently Shield, Retaliate and Infuse), rather than legacy direct hero-defense mutation. A saved queue can resume after an already-completed Guard event without replaying it. Browser regressions verify a normal Brace action and resume-after-reload case.
