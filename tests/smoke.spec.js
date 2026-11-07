@@ -826,7 +826,10 @@ test('queued hero attack resumes forced Push after reload without drawing modifi
  await expect(page.locator('#actionUI')).toContainText('push the enemy');
  let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
  expect(st.combatQueue?.paused).toBe(true);
- expect(st.combatQueue?.index).toBe(1);
+ const linked=st.combatQueue.events.filter(e=>e.type==='heroAttackLinked');
+ expect(linked.map(e=>e.step.type)).toEqual(['condition','push']);
+ expect(st.combatQueue?.index).toBe(
+   st.combatQueue.events.findIndex(e=>e.type==='heroAttackPostHit'));
  expect(st.pendingHeroChoice?.targetId).toBe('e0');
  const hp=st.enemies[0].hp,used=st.modifiers.heroes[0].discard.length;
  await page.reload();
@@ -2240,6 +2243,39 @@ test('F2 live Brace bottom queues guard and shield in order',async ({page})=>{
  expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
  expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
  expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+
+test('F2 ordered linked effects persist a null attack roll without granting condition',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=['null'];
+  s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(99);
+ expect(st.enemies[0].conditions.disarm).toBeUndefined();
+ const linked=st.combatQueue.events.filter(e=>e.type==='heroAttackLinked');
+ expect(linked.map(e=>e.step.type)).toEqual(['condition','push']);
+ expect(linked.map(e=>e.miss)).toEqual([true,true]);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ await page.reload();
+ await page.locator('#cancelTarget').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(99);
+ expect(st.enemies[0].conditions.disarm).toBeUndefined();
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
