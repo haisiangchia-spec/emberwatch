@@ -130,6 +130,38 @@
    }
    return steps;
  }
+ // Translate licensed/original structured card instructions into the stable
+ // live hero combat queue. No display-string parsing or implied abilities.
+ // Unsupported steps fail at compilation, before changing game state.
+ function compileHeroQueue(actorId,action,steps){
+   if(typeof actorId!=='string'||!actorId||
+      !action||typeof action!=='object'||!Array.isArray(steps)||!steps.length)
+     throw Error('Invalid hero action sequence');
+   const allowed=new Set(['guard','shield','retaliate','infuse','heal','condition']);
+   const events=[];
+   for(const instruction of steps){
+     if(!instruction||!allowed.has(instruction.type))
+       throw Error('Unsupported hero instruction: '+instruction?.type);
+     const step=copy(instruction);
+     if(step.type==='guard'){
+       if(step.optional)throw Error('Guard cannot be optional in this queue');
+       if(step.value==='action')step.value=action.value;
+       if(!Number.isFinite(step.value)||step.value<0)
+         throw Error('Invalid Guard value');
+       events.push({type:'heroGuard',actorId,value:step.value});
+       continue;
+     }
+     if(step.value!==undefined&&(!Number.isFinite(step.value)||step.value<0))
+       throw Error('Invalid instruction value');
+     if(['heal','condition'].includes(step.type)&&!step.optional)
+       throw Error('Mandatory targeted effects require interactive targeting');
+     if(step.type==='condition'&&typeof step.condition!=='string')
+       throw Error('Condition name required');
+     events.push({type:'heroAbilityEffect',actorId,effect:step});
+   }
+   events.push({type:'heroActionComplete',actorId,action:copy(action)});
+   return events;
+ }
  function beginSequence(state,actorId,steps){
    validate(state,actorId,steps);
    return {state:copy(state),cursor:{actorId,steps:copy(steps),index:0,events:[]},done:false};
@@ -255,5 +287,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,optionalTargetIds,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,compileHeroQueue,validTargets,optionalTargetIds,neighbors,distance,hitDamage,healAmount,linkedAttackSteps,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
