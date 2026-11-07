@@ -1,3 +1,11 @@
+# Emberwatch v0.12.6 — Structured Hero Action Compiler
+
+Card instruction arrays can now compile directly into serializable live combat-queue events. All Guard cards use the shared compiler; *Aid the Fallen* has been migrated to explicit ordered card data. Invalid or unsupported instructions are rejected before altering combat state. Conformance tests cover compile ordering, persistence and normal gameplay.
+
+F2 remains open: this is a safe first data-driven execution path, not a complete interpreter for attacks, movement and all targeted abilities.
+
+---
+
 # Emberwatch v0.12.5 — Shared Optional Targeting
 
 Optional queued effects now share one target-eligibility contract for friendly Heal and enemy Condition instructions. Saved target choices are revalidated on resume, and a queue can apply or skip multiple optional steps in sequence without replaying earlier events. Unit and browser regressions cover range, team, line-of-sight, reload and target invalidation.
