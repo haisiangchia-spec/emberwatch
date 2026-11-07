@@ -1,8 +1,12 @@
-# Emberwatch v0.10.7 — Ranged Monster Positioning
+# Emberwatch v0.10.8 — Multi-Target Monster Attacks
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Monster Attack steps with `targets: N` now seek positions that preserve primary focus, minimize negative terrain, maximize additional targets, minimize disadvantaged attacks, and then movement cost.
+- Individual monster attacks have independent attack-modifier draws and damage prompts, with the shared queue surviving reloads. A monster defeated by Retaliate cannot finish its remaining attacks.
+- **Still incomplete:** players cannot yet pick among equally valid attack positions, secondary targets or attack order; full AoE and monster abilities remain additional fidelity work.
 
 - Ranged monsters now retreat the shortest safe distance when adjacent to their primary focus, unless already Muddled or unable to move. Adjacency applies actual Disadvantage to modifier draws, including explicitly ranged Range 1 attacks.
 - Focus selection is kept separate from ranged Disadvantage; the chosen primary target does not change merely because another enemy could be attacked without Disadvantage.
