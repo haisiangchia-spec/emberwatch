@@ -2193,3 +2193,51 @@ test('shared F2 healing caps a queued monster effect after reload',async ({page}
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 ordered hero guard and shield resolve once after interrupted queue reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+   s.phase='damage';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+   s.players[0].picked=[0,1];s.players[0].guard=0;s.players[0].active=[];
+   s.combatQueue={version:1,owner:'hero',index:1,paused:true,pauseReason:'damage',events:[
+     {type:'heroGuard',actorId:'p0',value:2},
+     {type:'heroAbilityEffect',actorId:'p0',effect:{type:'shield',value:1,duration:'round'}},
+     {type:'heroActionComplete',actorId:'p0',
+       action:{kind:'guard',value:2,which:'bottom',cardIndex:1,asBasic:false}}
+   ]};
+   s.pendingDamage={heroIndex:0,amount:1,source:'Prior event',
+     condition:null,resume:'queue',monsterType:null,sourceId:null,attack:false};
+   localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].guard).toBe(2);
+ expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 live Brace bottom queues guard and shield in order',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+   const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+   s.phase='act';s.order=[{type:'player',id:0,initiative:18}];s.turnIndex=0;
+   s.players[0].picked=[0,1];s.players[0].guard=0;s.players[0].active=[];
+   localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="bottom"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].guard).toBe(2);
+ expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains 2 Guard'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes('gains shield 1'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
