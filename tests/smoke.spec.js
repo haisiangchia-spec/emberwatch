@@ -3043,3 +3043,100 @@ test('F2 Move then Attack invalidated target requires reselect or no-target fini
  expect(st.pendingAbilityChoice??null).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('F2 repeated attacks resolve distinct targets across retaliation and reload',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.players[0].active=[];
+  s.modifiers.heroes[0].draw=[0,0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[
+   {id:'e0',name:'Ash Raider',q:1,r:4,hp:12,maxHp:12,conditions:{},
+    active:[{type:'retaliate',value:2,range:1,duration:'round'}]},
+   {id:'e1',name:'Ember Scout',q:0,r:3,hp:10,maxHp:10,conditions:{}}
+  ];
+  const action={kind:'attack',value:4,range:1,which:'top',cardIndex:2,
+   asBasic:false,multiRemaining:1,targetIds:[],valid:[{q:1,r:4},{q:0,r:3}]};
+  const events=window.EmberwatchAbilities.compileHeroQueue('p0',action,[
+   {type:'attack',value:4,range:1},{type:'attack',value:2,range:2},
+   {type:'shield',value:1,duration:'round',optional:true}
+  ],{targetId:'e0'});
+  s.combatQueue={version:1,owner:'hero',index:0,paused:true,
+   pauseReason:'damage',events};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Earlier interruption',
+   condition:null,resume:'queue',attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='e0').hp).toBe(8);
+ expect(st.enemies.find(e=>e.id==='e1').hp).toBe(10);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#optionalAbilityChoice')).toContainText('Required target');
+ expect(await page.locator('[data-optional-target="e1"]').count()).toBe(1);
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.enemies.find(e=>e.id==='e0').hp).toBe(8);
+ await page.locator('[data-optional-target="e1"]').click();
+ await page.reload();
+ await page.locator('#executeAbility').click();
+ await expect(page.locator('#optionalAbilityChoice')).toContainText('Optional ability');
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='e0').hp).toBe(8);
+ expect(st.enemies.find(e=>e.id==='e1').hp).toBe(8);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(2);
+ await page.reload();
+ await page.locator('#executeAbility').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.players[0].active.filter(e=>e.type==='shield'&&e.value===1)).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ember Scout'))).toHaveLength(1);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(2);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('F2 repeated Attack has no-target finish without redrawing first hit',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];
+  s.modifiers.heroes[0].draw=[0,0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',q:1,r:4,hp:10,maxHp:10,conditions:{}}];
+  const action={kind:'attack',value:4,range:1,which:'top',cardIndex:2,
+   asBasic:false,multiRemaining:1,targetIds:[],valid:[{q:1,r:4}]};
+  s.combatQueue={version:1,owner:'hero',index:0,paused:true,
+   pauseReason:'damage',events:window.EmberwatchAbilities.compileHeroQueue('p0',action,[
+    {type:'attack',value:4,range:1},{type:'attack',value:2,range:1}
+   ],{targetId:'e0'})};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Earlier interruption',
+   condition:null,resume:'queue',attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ await expect(page.locator('#optionalAbilityChoice')).toContainText('Required target');
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.enemies[0].q=7;s.enemies[0].r=5;
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await expect(page.locator('#skipAbility')).toHaveText('Finish without attack');
+ await page.locator('#skipAbility').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].hp).toBe(6);
+ expect(st.modifiers.heroes[0].discard).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
