@@ -45,7 +45,7 @@ function conditionLabel(u){return Object.keys(u.conditions||{}).filter(k=>u.cond
 function hasCondition(u,k){return !!u.conditions?.[k]}
 function addCondition(u,k){if(!CONDITIONS.includes(k)||!u||u.hp<=0)return;u.conditions??={};u.conditions[k]=true;log(u.name+' gains '+k+'.')}
 function removeCondition(u,k){if(u.conditions?.[k]){delete u.conditions[k];log(u.name+' loses '+k+'.')}}
-function dealDamage(target,raw){const shield=(target.active||[]).filter(e=>e.type==='shield').reduce((n,e)=>n+e.value,0);const damage=window.EmberwatchAbilities.hitDamage({power:Math.max(0,raw),poison:hasCondition(target,'poison'),guard:Math.max(0,target.guard||0),shield}).damage;target.guard=0;target.hp=Math.max(0,target.hp-damage);if(target.hp===0&&target.id.startsWith('p')){target.exhausted=true;log(target.name+' falls in battle.')}return damage}
+function dealDamage(target,raw,miss=false){const shield=(target.active||[]).filter(e=>e.type==='shield').reduce((n,e)=>n+e.value,0);const damage=window.EmberwatchAbilities.hitDamage({power:Math.max(0,raw),poison:hasCondition(target,'poison'),guard:Math.max(0,target.guard||0),shield,miss}).damage;target.guard=0;target.hp=Math.max(0,target.hp-damage);if(target.hp===0&&target.id.startsWith('p')){target.exhausted=true;log(target.name+' falls in battle.')}return damage}
 function healUnit(target,amount){let healed=Math.min(target.maxHp-target.hp,Math.max(0,amount));target.hp+=healed;removeCondition(target,'poison');removeCondition(target,'wound');return healed}
 function unitStart(u){if(!u||u.hp<=0)return false;u._turnConditions=Object.keys(u.conditions||{});if(hasCondition(u,'wound')){u.hp=Math.max(0,u.hp-1);log(u.name+' suffers 1 Wound damage.');if(u.hp===0){if(u.id.startsWith('p'))u.exhausted=true;return false}}return true}
 function unitEnd(u){for(const k of u._turnConditions||[])if(!['poison','wound'].includes(k))removeCondition(u,k);delete u._turnConditions}
@@ -285,7 +285,7 @@ function clickHex(q,r){
  }else if(a.kind==='attack'){
    const target=state.enemies.find(e=>e.q===q&&e.r===r);if(!target)return;
    const roll=rollAttack(a.value,state.modifiers.heroes[state.players.indexOf(actor)],actor);
-   const damage=dealDamage(target,roll.damage);
+   const damage=dealDamage(target,roll.damage,roll.mod==='null');
    if(damage>0)awardXP(state.players.indexOf(actor),1);
    log(actor.name+' attacks '+target.name+' for '+damage+' ('+modifierLabel(roll.mod)+(roll.second!==undefined?' vs '+modifierLabel(roll.second):'')+').');
    if(a.condition&&roll.mod!=='null'&&target.hp>0)addCondition(target,a.condition);
@@ -339,7 +339,7 @@ function resolveIncomingDamage(modeChoice,cards=[]){
  return true
 }
 function prepareIncomingDamage(heroIndex,amount,source,meta={}){
- const p=state.players[heroIndex],shield=(meta.ignoreGuard||meta.attack===false)?0:(p.active||[]).filter(x=>x.type==='shield').reduce((v,x)=>v+x.value,0),raw=window.EmberwatchAbilities.hitDamage({power:Math.max(0,amount),poison:!meta.ignorePoison&&hasCondition(p,'poison'),guard:meta.ignoreGuard?0:Math.max(0,p.guard||0),shield}).damage;
+ const p=state.players[heroIndex],shield=(meta.ignoreGuard||meta.attack===false)?0:(p.active||[]).filter(x=>x.type==='shield').reduce((v,x)=>v+x.value,0),raw=window.EmberwatchAbilities.hitDamage({power:Math.max(0,amount),poison:!meta.ignorePoison&&hasCondition(p,'poison'),guard:meta.ignoreGuard?0:Math.max(0,p.guard||0),shield,miss:!!meta.miss}).damage;
  if(!meta.ignoreGuard)p.guard=0;if(raw===0){log(p.name+' blocks '+source+' (0 damage).');if(meta.condition)addCondition(p,meta.condition);if(meta.attack!==false)retaliateAgainst(meta.sourceId,heroIndex);return false}
  state.pendingDamage={heroIndex,amount:raw,source,condition:meta.condition||null,resume:meta.resume||'enemy',monsterType:meta.monsterType||null,sourceId:meta.sourceId||null,attack:meta.attack!==false};
  state.phase='damage';if(mode==='offline')seat=heroIndex;commit();return true
@@ -526,7 +526,7 @@ function enemyTurn(type){
    const roll=rollAttack(plan.spec.attack,state.modifiers.monsters,enemy);
    log(enemy.name+' attacks '+target.name+' ('+modifierLabel(roll.mod)+').');
    unitEnd(enemy);state.enemyCursor++;
-   if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,sourceId:enemy.id,attack:true,condition:attackScript?.condition||revealed.condition}))return;
+   if(prepareIncomingDamage(state.players.indexOf(target),roll.damage,enemy.name,{resume:'enemy',monsterType:type,sourceId:enemy.id,attack:true,condition:attackScript?.condition||revealed.condition,miss:roll.mod==='null'}))return;
    state.enemyCursor--;
   }else{log(enemy.name+' has no attack in range.');unitEnd(enemy)}
  }
