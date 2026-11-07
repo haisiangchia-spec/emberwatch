@@ -1,3 +1,11 @@
+# Emberwatch v0.13.5 — Effects Between Repeated Attacks
+
+Structured hero abilities can now interleave supported self-effects (Shield, Retaliate, Infuse) between consecutive Attack steps. These effects run after previous linked attacks and retaliation, then pause for the next legal target. Serializable checkpoints protect against replaying earlier attacks, modifier draws or self-effects.
+
+F2 remains incomplete: interleaved targeted effects, repeated movement, optional attack semantics and advanced class mechanics still require work.
+
+---
+
 # Emberwatch v0.13.4 — Consecutive Attacks With Target Checkpoints
 
 A single structured hero ability can resolve two or three consecutive Attack instructions, selecting a valid target separately after each completed hit, linked effect and retaliation. Every checkpoint is serializable and reload-safe; optional defensive follow-ups resume only after the final attack. The existing demo card abilities are unchanged.
