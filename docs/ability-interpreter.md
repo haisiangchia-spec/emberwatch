@@ -1,6 +1,6 @@
 # Emberwatch F2: structured tactical abilities
 
-**Implementation stage:** v0.9.0, partial tactical ability interpreter. These are original demo effects; no Frosthaven card text or artwork is distributed.
+**Implementation stage:** v0.9.1, partial tactical ability interpreter. These are original demo effects; no Frosthaven card text or artwork is distributed.
 
 ## What's now playable
 
@@ -55,7 +55,7 @@ Pass `{ anchor: { q: 2, r: 1 } }` for the corresponding ability choice.
 The standalone interpreter currently supports **ordered, immediate effects**, but the live game only uses a subset of those effects; it is not a complete Frosthaven action pipeline.
 
 **Important gaps before full F2 conformance:**
-- The resolver deliberately **rejects** linked attack post-effects (`after`) because Retaliate must occur after attack effects (including displacement) and this needs a resumable attack-resolution queue.
+- Linked attack post-effects (`after`) now resolve in order before Retaliate. The standalone engine supports targeted Push, Pull and condition links. The live game supports attack → one-hex Push/Pull → Retaliate, with a resumable damage-prevention choice. **It is not yet a generic multi-effect event queue** that supports every interrupt, optional effect and monster ability.
 - Area patterns can be computed, but rotated/target-relative hex templates, obstacle edge rules, precise range/line of sight and positional choice UI are not yet complete.
 - No automatic summon effects or summon action-order system.
 - Attack modifier draws, perk chains, rolling modifiers, Advantage/Disadvantage, shields, conditions, ward/brittle, consumed elements and monster AI still require consolidation into the new resolver.
@@ -63,6 +63,14 @@ The standalone interpreter currently supports **ordered, immediate effects**, bu
 - Push/Pull currently offers a single legal hex and player choice, but not maximum-distance multi-hex monster displacement or terrain damage along the path.
 - Browser tests use original demo classes. Complete official class and monster cards are **not** bundled, and must only be added from materials with distribution permission.
 
+## v0.9.1 milestone
+
+- A defender that dies from an attack does not retaliate.
+- A living defender's Retaliate range is checked after linked displacement.
+- Multiple-target attacks resolve each target's damage, linked effects and Retaliate independently.
+- In the live game, retaliation against a hero can pause for HP loss or card-loss prevention and resume without repeating the triggering attack.
+- 24 Chromium browser tests passed on the code-bearing commit (GitHub Actions run 42370841797); unit conformance assertions also passed.
+
 ## Next increment
 
-F2.1 will introduce a resumable attack event queue, multiple linked effects, and attack-resolution timing. Then we can connect full area-targeting, conditions, terrain interactions and monster attack scripts to the same shared pipeline, with browser and unit conformance tests for every rule.
+F2.2 will consolidate generic linked effects, the live targeting interface and queued interrupts for multi-target monster abilities. Then we can add terrain damage, summons, additional conditions, and fuller modifier-deck semantics. It remains necessary to independently validate each rule against the printed rules and FAQ.
