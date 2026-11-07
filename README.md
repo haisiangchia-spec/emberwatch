@@ -1,8 +1,12 @@
-# Emberwatch v0.10.6 — Monster Focus Rules Audit
+# Emberwatch v0.10.7 — Ranged Monster Positioning
 
 Emberwatch is an original four-hero cooperative tactical HTML5 prototype. The current effort prioritizes mechanical fidelity to tactical dungeon-crawler rules before expanding scenarios. It does not distribute official Frosthaven cards or artwork.
 
 ## Recent tactical-engine progress
+
+- Ranged monsters now retreat the shortest safe distance when adjacent to their primary focus, unless already Muddled or unable to move. Adjacency applies actual Disadvantage to modifier draws, including explicitly ranged Range 1 attacks.
+- Focus selection is kept separate from ranged Disadvantage; the chosen primary target does not change merely because another enemy could be attacked without Disadvantage.
+- Monster positioning and multi-target attacks still require further official-rules conformance before claiming full fidelity.
 
 - The first Frosthaven monster-focus audit increment prioritizes avoiding negative terrain before movement cost, and gives Disarmed/attackless monsters melee focus. Immobilized monsters remain able to attack without moving.
 - Both official rules and the official FAQ have been compared, but **focus and movement are not yet fully rule-complete** (ranged disadvantage positioning, extra targets, icy terrain and trap triggers remain).
