@@ -1,3 +1,11 @@
+# Emberwatch v0.13.0 — Mixed Shield → Attack Card Instructions
+
+The structured hero queue compiler now supports ordered mandatory self effects followed by a terminal Attack. *Shield Rush* demonstrates Shield 1 then Attack 3, using the existing combat modifier, linked condition, forced movement and retaliation engine. Compiled events remain serializable through a damage interruption. Post-hit instructions remain explicitly unsupported until continuation logic can safely resume them.
+
+See `docs/tactical-fidelity.md` for remaining F2 acceptance gaps.
+
+---
+
 # Emberwatch v0.12.9 — Mixed Hero Action With Required Target
 
 The shared instruction compiler now supports deferred mandatory Heal targeting after an earlier resolved ability. The live hero queue pauses with a persisted target decision; a required step cannot be skipped and its target is revalidated after reload. *Last Light* demonstrates Guard 2 followed by required Heal 1. Regression tests cover execution and target invalidation.
