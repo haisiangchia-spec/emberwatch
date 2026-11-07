@@ -313,6 +313,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.1 live ordered hero defenses
+
+- Hero Guard actions now enter the same serialized combat queue as movement and attacks: `heroGuard` -> any structured `heroAbilityEffect` instructions -> `heroActionComplete`.
+- The Shield and Retaliate effects in this path use `EmberwatchAbilities.apply()`, not a second independent defensive state mutation. The final action event still owns infusion, loss-on-use and action completion.
+- A resumed queue can execute the remaining persistent effects without replaying earlier Guard events. Tests cover a restored checkpoint and normal Brace bottom action, including one-time application and correct round-duration Shield state.
+- **Scope limit:** This only migrates eligible non-targeted defense sequences. Attack, Move, Heal, optional player decisions, and class-specific ability families still require conversion to a unified interpreter. F2 remains open and should not be counted complete based on this increment alone.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
