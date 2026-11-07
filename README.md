@@ -1,3 +1,11 @@
+# Emberwatch v0.11.7 — Hero movement recovery after interrupts
+
+Hero movement events now retain the intended destination and record the actual movement cost of completed hex steps. When a saved path becomes obstructed after a terrain-damage decision and reload, a surviving hero can try a **single** new route to the same destination using only the unspent movement points. Terrain entries that happened earlier in the action are not replayed. A compulsory icy slide that becomes invalid still stops instead of changing direction.
+
+The browser regression includes an interrupted hero recovering around a newly blocked hex after reload, with no repeated trap trigger. The result is a bounded recovery step, **not** unrestricted mid-action replanning or full official Frosthaven tactical equivalence. GitHub Actions test results must be checked against the tested commit SHA.
+
+---
+
 ## Automated CI results available to the GitHub connector
 
 The existing `.github/workflows/browser-tests.yml` still runs `npm run test:unit` and `npm run test:smoke` on every push to `main`. A final step now publishes `latest.json` on the separate `ci-results` branch, including the tested commit SHA, run URL, unit/browser outcomes and combined result. This branch is not watched by the main workflow, so writing the report cannot recursively trigger a test run.
