@@ -767,7 +767,10 @@ function runCombatQueue(){
        }
        continue
      }
-     event.paidCost=event.icyExtra?0:(mode==='walk'&&difficult(hex.q,hex.r)?2:1);
+     // next() returns an event COPY; persist consumed cost on the queue
+     // snapshot so a reload can reconstruct the remaining allowance.
+     state.combatQueue.events[state.combatQueue.index-1].paidCost=
+       event.icyExtra?0:(mode==='walk'&&difficult(hex.q,hex.r)?2:1);
      actor.q=hex.q;actor.r=hex.r;
      log(actor.name+' moves to '+hex.q+','+hex.r+'.');
      let finalStep=event.finalStep;
