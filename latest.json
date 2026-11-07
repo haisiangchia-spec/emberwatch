@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "sourceBranch": "main",
-  "sourceSha": "b5f6e137bbb9927a6790dbce47d669dc2b6a4742",
-  "runId": 42386154194,
+  "sourceSha": "9297447479d22b6854ebd3d33bc397f44a2a410f",
+  "runId": 42386303916,
   "runAttempt": "1",
-  "runUrl": "https://github.com/haisiangchia-spec/emberwatch/actions/runs/42386154194",
+  "runUrl": "https://github.com/haisiangchia-spec/emberwatch/actions/runs/42386303916",
   "unit": "success",
   "browser": "failure",
-  "recordedAt": "2026-11-07T15:24:48.180Z",
+  "recordedAt": "2026-11-07T15:26:50.893Z",
   "overall": "failure"
 }
