@@ -1217,3 +1217,92 @@ test('monster focuses on a safer distant enemy rather than crossing a trap to a 
  expect(st.journal.some(line=>line.includes(' focuses '+st.players[0].name))).toBe(false);
  expect(errors).toEqual([]);
 });
+
+test('adjacent ranged monster retreats minimum safe distance but retains primary focus',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:1,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20}];
+  s.turnIndex=0;s.players[1].picked=[0,1];
+  for(let i=0;i<4;i++)if(i!==1){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'ranged-retreater',name:'Ash Archer',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.traps=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Archer':{name:'Ranged Retreat',initiative:20,abilities:[
+   {type:'move',value:2},{type:'attack',value:3,range:3}
+  ]}};
+  s.modifiers.monsters.draw=[0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ const monster=st.enemies[0],target=st.players[1];
+ expect(st.monsterTurnPlans['ranged-retreater'].targetId).toBe(target.id);
+ const dist=await page.evaluate(({a,b})=>window.EmberwatchAbilities.distance(a,b),
+   {a:{q:monster.q,r:monster.r},b:{q:target.q,r:target.r}});
+ expect(dist).toBe(2);
+ expect(st.modifiers.monsters.discard.length).toBe(1);
+ const savedPos=[monster.q,monster.r];
+ await page.reload();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual(savedPos);
+ await page.locator('#takeDamage').click();
+ expect(errors).toEqual([]);
+});
+
+test('muddled adjacent ranged monster does not retreat solely to avoid disadvantage',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:1,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20}];
+  s.turnIndex=0;s.players[1].picked=[0,1];
+  for(let i=0;i<4;i++)if(i!==1){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'muddled-archer',name:'Ash Archer',hp:8,maxHp:8,q:1,r:3,conditions:{muddle:true}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.traps=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Archer':{name:'Ranged Shot',initiative:20,abilities:[
+   {type:'move',value:2},{type:'attack',value:3,range:3}
+  ]}};
+  s.modifiers.monsters.draw=[-2,2];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([1,3]);
+ expect(st.pendingDamage.amount).toBe(1);
+ expect(st.modifiers.monsters.discard.length).toBe(2);
+ expect(errors).toEqual([]);
+});
+
+test('immobilized adjacent ranged monster attacks with disadvantage',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:1,initiative:10},{type:'enemy',id:'Ash Archer',initiative:20}];
+  s.turnIndex=0;s.players[1].picked=[0,1];
+  for(let i=0;i<4;i++)if(i!==1){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'rooted-ranged',name:'Ash Archer',hp:8,maxHp:8,q:1,r:3,conditions:{immobilize:true}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Archer':{name:'Rooted Shot',initiative:20,abilities:[
+   {type:'move',value:3},{type:'attack',value:3,range:3}
+  ]}};
+  s.modifiers.monsters.draw=[-2,2];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([1,3]);
+ expect(st.pendingDamage.amount).toBe(1);
+ expect(st.modifiers.monsters.discard.length).toBe(2);
+ expect(errors).toEqual([]);
+});
