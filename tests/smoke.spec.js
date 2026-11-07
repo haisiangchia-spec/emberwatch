@@ -92,3 +92,53 @@ test('new scenario resets progress and fog of war', async ({ page }) => {
   await expect(page.locator('#actionUI .ability')).toHaveCount(6);
   expect(errors).toEqual([]);
 });
+
+
+test('campaign hub persists purchases and card enhancements across a scenario reset', async ({ page }) => {
+  const errors = monitorErrors(page);
+  await openCleanGame(page);
+  await page.evaluate(() => {
+    const key = 'emberwatch_save_v1';
+    const save = JSON.parse(localStorage.getItem(key));
+    save.campaign.heroes[0].gold = 10;
+    save.campaign.heroes[0].xp = 6;
+    save.campaign.materials = 2;
+    localStorage.setItem(key, JSON.stringify(save));
+  });
+  await page.reload();
+  await page.locator('#campaignHub').click();
+  await expect(page.locator('#campaignRoster')).toContainText('Gold 10');
+  await page.locator('[data-buy="0:sword"]').click();
+  await expect(page.locator('#campaignRoster')).toContainText('Tempered Edge');
+  await page.locator('[data-enhance="0"]').click();
+  await expect(page.locator('#campaignRoster')).toContainText('Shield Rush ✓');
+  await page.locator('#hubNext').click();
+  await expect(page.locator('#phaseInfo')).toContainText('Round 1');
+  const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).campaign);
+  expect(progress.heroes[0].gold).toBe(4);
+  expect(progress.heroes[0].xp).toBe(6);
+  expect(progress.heroes[0].gear).toContain('sword');
+  expect(progress.heroes[0].upgrades).toContain(0);
+  expect(progress.materials).toBe(0);
+  await page.reload();
+  await page.locator('#campaignHub').click();
+  await expect(page.locator('#campaignRoster')).toContainText('Tempered Edge');
+  expect(errors).toEqual([]);
+});
+
+test('campaign levels increase max HP on the next scenario', async ({ page }) => {
+  const errors = monitorErrors(page);
+  await openCleanGame(page);
+  await page.evaluate(() => {
+    const key = 'emberwatch_save_v1';
+    const save = JSON.parse(localStorage.getItem(key));
+    save.campaign.heroes[0].level = 3;
+    localStorage.setItem(key, JSON.stringify(save));
+  });
+  await page.reload();
+  await page.locator('#campaignHub').click();
+  await page.locator('#hubNext').click();
+  const hp = await page.evaluate(() => JSON.parse(localStorage.getItem('emberwatch_save_v1')).players[0].maxHp);
+  expect(hp).toBe(18);
+  expect(errors).toEqual([]);
+});
