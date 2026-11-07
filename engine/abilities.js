@@ -111,12 +111,35 @@
          const damage=Math.max(0,attack-shield);
          target.hp=Math.max(0,target.hp-damage);
          events.push({type:'attack',actor:actorId,target:id,attack,shield,damage});
-         // Retaliate resolves after attack effects. This resolver implements it for an
-         // atomic Attack only. Linked push/pull posteffects need the pending-hit queue.
-         if(step.after?.length)throw Error('Linked attack effects require later pending-hit resolver');
-         const ret=(target.active||[]).filter(e=>e.type==='retaliate'&&distance(actor,target)<=e.range)
-                    .reduce((s,e)=>s+e.value,0);
-         if(target.hp>0&&ret>0){actor.hp=Math.max(0,actor.hp-ret);events.push({type:'retaliate',actor:id,target:actorId,damage:ret})}
+         // Linked effects resolve before a surviving defender retaliates.
+         // Each targeted attack is atomic: damage -> linked effects -> retaliation.
+         // Choices for a linked push/pull path are per target, per linked step.
+         if(step.after?.length&&target.hp>0){
+           if(!Array.isArray(step.after))throw Error('Linked attack effects must be an array');
+           const linkedChoices=choice.after?.[id]||[];
+           for(let n=0;n<step.after.length;n++){
+             const linked=step.after[n],selection=linkedChoices[n]||{};
+             if(linked.optional&&selection.skip){events.push({type:'skipped',target:id,linked:n});continue}
+             if(linked.type==='push'||linked.type==='pull'){
+               const path=selection.path||[];
+               movePath(next,actor,target,linked.type,path,linked.value||0);
+               events.push({type:linked.type,target:id,at:{q:target.q,r:target.r},linked:n});
+             }else if(linked.type==='condition'){
+               if(!linked.condition)throw Error('Linked condition is missing its name');
+               target.conditions??={};
+               target.conditions[linked.condition]=true;
+               events.push({type:'condition',target:id,condition:linked.condition,linked:n});
+             }else throw Error('Unsupported linked effect: '+linked.type);
+           }
+         }
+         // A defender killed by damage cannot retaliate. Check distance after
+         // linked displacements; normal shields do not reduce retaliate damage.
+         const ret=target.hp>0?(target.active||[]).filter(e=>e.type==='retaliate'&&distance(actor,target)<=(e.range??1))
+                    .reduce((sum,e)=>sum+e.value,0):0;
+         if(ret>0&&actor.hp>0){
+           actor.hp=Math.max(0,actor.hp-ret);
+           events.push({type:'retaliate',actor:id,target:actorId,damage:ret});
+         }
        }else if(type==='heal'){
          const amount=Math.min(step.value||0,target.maxHp-target.hp);
          target.hp+=amount;events.push({type:'heal',target:id,amount});
