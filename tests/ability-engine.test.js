@@ -363,7 +363,7 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'attack',value:4,range:1},{type:'attack',value:2,range:1},
  {type:'attack',value:2,range:1},{type:'attack',value:2,range:1}
-],{targetId:'e0'}),/Repeated attacks must be consecutive/);
+],{targetId:'e0'}),/Only defensive self effects may separate repeated attacks/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
  {type:'attack',value:4},{type:'heal',value:2}
 ],{targetId:'e0'}),/Post-attack mandatory targets require deferred targeting/);
