@@ -8,7 +8,7 @@
 })(typeof window!=='undefined'?window:null,function(){
  'use strict';
  function compare(a,b){
-   for(const name of ['cost','distance','initiative','seat','row','col']){
+   for(const name of ['negative','cost','distance','initiative','seat','row','col']){
      const lhs=a[name]??Number.MAX_SAFE_INTEGER,rhs=b[name]??Number.MAX_SAFE_INTEGER;
      if(lhs!==rhs)return lhs-rhs;
    }
@@ -19,9 +19,10 @@
    const clean=candidates.map(c=>{
      if(!c||!c.targetId||!Number.isFinite(c.cost)||c.cost<0||
        !Number.isFinite(c.distance)||!Number.isFinite(c.initiative)||
+       !Number.isInteger(c.negative??0)||(c.negative??0)<0||
        !Number.isInteger(c.seat)||c.seat<0||!Number.isInteger(c.row)||!Number.isInteger(c.col))
        throw Error('Invalid monster focus candidate');
-     return {targetId:String(c.targetId),cost:c.cost,distance:c.distance,
+     return {targetId:String(c.targetId),negative:c.negative??0,cost:c.cost,distance:c.distance,
        initiative:c.initiative,seat:c.seat,row:c.row,col:c.col};
    });
    clean.sort(compare);
