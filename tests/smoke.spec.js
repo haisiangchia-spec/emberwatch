@@ -746,3 +746,39 @@ test('structured monster multi-attack ability pauses per hit and resumes without
  expect(state.journal.filter(x=>x.includes('attacks '))).toHaveLength(2);
  expect(errors).toEqual([]);
 });
+
+test('scripted monster Shield and infusion resolve once around an interrupted attack',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:1,initiative:30}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[1].picked=[0,1];
+  s.enemies=[{id:'buffer',name:'Ash Raider',hp:8,maxHp:8,q:1,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.difficult=[];s.scenario.revealed=[0,1,2];
+  s.monsterReveals={'Ash Raider':{
+    name:'Cinder Ward',initiative:20,
+    abilities:[{type:'shield',value:2,duration:'round'},
+               {type:'attack',value:2,range:1},
+               {type:'infuse',element:'fire'}]
+  }};
+  s.modifiers.monsters.draw=[0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ await expect(page.locator('#damageChoice')).toBeVisible();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies[0].active.filter(a=>a.type==='shield')).toHaveLength(1);
+ expect(st.elements.fire).toBe(0);
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.enemies[0].active.filter(a=>a.type==='shield')).toHaveLength(1);
+ expect(st.elements.fire).toBe(2);
+ expect(st.journal.filter(line=>line.includes('FIRE infused'))).toHaveLength(1);
+ expect(errors).toEqual([]);
+});
