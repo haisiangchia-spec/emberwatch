@@ -1,3 +1,11 @@
+# Emberwatch v0.12.3 — Live Optional Hero Ability Decisions
+
+The live action queue can now pause on an optional hero Shield/Retaliate/Infuse instruction and display an **Activate** or **Skip** decision. The decision survives save/reload via the queue cursor and `pendingAbilityChoice`. The original demo *Hold the Line* bottom action now demonstrates Guard 3 followed by optional Shield 1. Decisions resume the queue without duplicating the Guard event. Playwright tests cover both decisions across reload.
+
+F2 remains incomplete; targeted optional abilities, full character-card sequences, and comprehensive official-rule conformance are still open.
+
+---
+
 # Emberwatch v0.12.2 — Queued Hero Attack Linked Effects
 
 Hero attacks now save the steps **Hit → linked condition → optional Push/Pull → Post-Hit Retaliate** as separate serializable combat events. The common ability module normalizes the ordered linked steps, and the attack modifier result is copied onto the queued linked steps before they execute. Reloading during a Push/Pull prompt cannot redraw the attack. Null/miss modifiers suppress linked conditions but do not automatically suppress voluntary displacement. Legacy interrupted two-event attacks remain compatible.
