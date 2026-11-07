@@ -79,7 +79,7 @@ assert.throws(()=>apply(state(),'hero',[{type:'areaAttack',value:2,range:1,area:
 assert.throws(()=>apply(state(),'hero',[{type:'areaAttack',value:2,range:2,area:[]}],[{anchor:{q:2,r:1}}]),/shape/);
 console.log('F2 ability interpreter conformance assertions passed');
 const abilities=require('../engine/abilities.js');
-const shape=abilities.areaHexes({q:2,r:4},[{q:0,r:0},{q:-1,r:-1}]);
+const shape=abilities.areaHexes({q:2,r:4},[{q:0,r:0},{q:1,r:-1}]);
 assert.deepEqual(shape,[{q:2,r:4},{q:2,r:3}],'odd-row coordinates from axial offsets');
 const planned=abilities.beginSequence(state(),'hero',[
  {type:'shield',value:1,duration:'round'},
