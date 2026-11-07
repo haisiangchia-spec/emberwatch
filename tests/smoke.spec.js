@@ -538,3 +538,27 @@ test('skipping an optional push still resolves adjacent defender retaliation',as
  expect([st.enemies[0].q,st.enemies[0].r]).toEqual([1,4]);
  expect(st.pendingDamage).toBeNull();
 });
+
+test('Arc Pulse area anchor selects a two-hex pattern and damages both enemies',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:2,initiative:58}];s.turnIndex=0;
+  s.players[2].picked=[1,0];
+  s.enemies=[
+   {id:'test-a',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{}},
+   {id:'test-b',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
+  ];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await expect(page.locator('#actionUI')).toContainText('anchor for the area pattern');
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ const highlighted=page.locator('#board polygon.selected');
+ await expect(highlighted).toHaveCount(2);
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.every(e=>e.hp<99)).toBe(true);
+});
