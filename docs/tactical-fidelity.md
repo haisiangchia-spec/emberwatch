@@ -332,6 +332,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.3 interactive optional hero abilities
+
+- Optional self-directed defensive instructions can pause a **live** hero action queue after the previous mandatory step completes. The UI shows an explicit **Activate ability** or **Skip ability** choice, restored from saved `pendingAbilityChoice` and the queue's `optionalAbility` pause reason after reload.
+- A choice consumes its queued instruction only once: execution uses the common `EmberwatchAbilities.apply` effect adapter; declining records a skipped effect; then the queue resumes through action completion without replaying prior Guard.
+- The original demo card *Hold the Line* now demonstrates `Guard 3 → optional Shield 1` on its bottom action. Browser regressions cover both responses across reload. This does **not** require or supply proprietary Frosthaven card data.
+- The result is an integrated optional non-targeted effect checkpoint, **not** a full multi-target, optional linked ability, or class-specific instruction interpreter. F2 remains open pending generalized target selection and arbitrary ordered actions.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
