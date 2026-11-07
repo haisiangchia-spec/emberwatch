@@ -2102,7 +2102,7 @@ test('monster movement resumes from a saved hex checkpoint without replaying ter
  await page.reload();
  await page.locator('#takeDamage').click();
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
- expect([st.enemies[0].q,st.enemies[0].r]).toEqual([4,3]);
+ expect([st.enemies[0].q,st.enemies[0].r],st.journal.slice(-12).join(' | ')).toEqual([4,3]);
  expect(st.traps).toEqual([]);
  expect(st.modifiers.monsters.discard).toHaveLength(1);
  expect(st.combatQueue).toBeNull();
