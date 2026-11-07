@@ -871,3 +871,27 @@ test('skipping a queued Push after reload still triggers Retaliate only once',as
  expect(st.journal.filter(x=>x.includes(' attacks Ash Raider'))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('end turn cannot abandon an unresolved queued Push decision',async ({page})=>{
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:0,initiative:39}];s.turnIndex=0;
+  s.players[0].picked=[2,1];s.modifiers.heroes[0].draw=[0];s.modifiers.heroes[0].discard=[];
+  s.enemies=[{id:'e0',name:'Ash Raider',hp:99,maxHp:99,q:1,r:4,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await page.locator('#board polygon[data-q="1"][data-r="4"]').click();
+ await expect(page.locator('#actionUI')).toContainText('push the enemy');
+ await page.locator('#endTurn').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.turnIndex).toBe(0);
+ expect(st.combatQueue?.paused).toBe(true);
+ expect(st.pendingHeroChoice).not.toBeNull();
+ await page.locator('#cancelTarget').click();
+ const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(after.pendingHeroChoice).toBeNull();
+ expect(after.combatQueue).toBeNull();
+});
