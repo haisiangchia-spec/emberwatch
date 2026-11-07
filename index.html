@@ -797,7 +797,11 @@ function attackQueuedMonsterStep(event){
  if(axialDist(enemy,target)>range||!lineOfSight(enemy,target)){
    log(enemy.name+' cannot attack its selected focus.');return false
  }
- const adjacentRanged=range>1&&axialDist(enemy,target)===1;
+ // An explicitly ranged Range 1 attack is still ranged and therefore
+ // disadvantaged at adjacency, even though no nonadjacent retreat is possible.
+ const baseRange=monsterProfile({name:event.monsterType}).range;
+ const ranged=step.ranged??(baseRange>1||range>1);
+ const adjacentRanged=ranged&&axialDist(enemy,target)===1;
  const roll=rollAttack(step.value,state.modifiers.monsters,enemy,
    {rangedAdjacent:adjacentRanged});
  log(enemy.name+' attacks '+target.name+' ('+modifierLabel(roll.mod)+
