@@ -7,7 +7,7 @@
 })(typeof window!=='undefined'?window:null,function(){
  'use strict';
  const copy=value=>JSON.parse(JSON.stringify(value));
- const TYPES=new Set(['monsterTurn','monsterStart','monsterFocus','monsterMove','monsterMoveHex','monsterAttack','monsterEffect','monsterFinish','heroAttackContinuation','heroAttackHit','heroAttackLinked','heroAttackPostHit','heroActionResolve','heroGuard','heroAbilityEffect','heroMoveStep','heroActionComplete']);
+ const TYPES=new Set(['monsterTurn','monsterStart','monsterFocus','monsterMove','monsterMoveHex','monsterAttack','monsterEffect','monsterFinish','heroAttackTargetChoice','heroAttackContinuation','heroAttackHit','heroAttackLinked','heroAttackPostHit','heroActionResolve','heroGuard','heroAbilityEffect','heroMoveStep','heroActionComplete']);
  function create(owner,events){
    if(!['monster','hero'].includes(owner))throw Error('Unsupported combat queue owner');
    if(!Array.isArray(events)||!events.length)throw Error('Combat queue requires events');
