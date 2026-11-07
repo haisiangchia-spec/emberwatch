@@ -12,7 +12,7 @@
      const lhs=a[name]??Number.MAX_SAFE_INTEGER,rhs=b[name]??Number.MAX_SAFE_INTEGER;
      if(lhs!==rhs)return lhs-rhs;
    }
-   return String(a.targetId).localeCompare(String(b.targetId));
+   return 0;
  }
  function pick(items,rng=Math.random){
    if(!items.length)return null;
