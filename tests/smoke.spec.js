@@ -1090,3 +1090,28 @@ test('legacy monster modifier card is normalized into stable scripted events bef
  expect(st.journal.filter(line=>line.includes(' attacks '))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('pre-migration atomic monster queue snapshot completes without replaying attacks',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.round=2;
+  s.order=[{type:'enemy',id:'Ash Raider',initiative:20},{type:'player',id:0,initiative:30}];
+  s.turnIndex=0;
+  s.combatQueue={version:1,owner:'monster',index:1,paused:true,pauseReason:'damage',
+   events:[{type:'monsterTurn',actorId:'old-one',monsterType:'Ash Raider'}]};
+  s.pendingDamage={heroIndex:0,amount:2,source:'old-one',condition:null,
+    resume:'queue',monsterType:'Ash Raider',sourceId:'old-one',attack:true};
+  s.enemies=[{id:'old-one',name:'Ash Raider',hp:8,maxHp:8,q:2,r:4,conditions:{}}];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingDamage).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(st.turnIndex).toBe(1);
+ expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
+ expect(errors).toEqual([]);
+});
