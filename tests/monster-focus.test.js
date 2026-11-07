@@ -92,3 +92,14 @@ assert.equal(multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:
  multiFixtures.map(x=>({...x,occupied:true}))}),null);
 assert.throws(()=>multiTargetPosition({focusId:'p0',maxTargets:1,move:2,candidates:[]}),/Invalid/);
 console.log('Multi-target movement ranking assertions passed');
+
+chosen=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:[
+ {q:1,r:1,cost:1,negative:0,occupied:false,targets:[
+   {id:'p0',seat:0,disadvantaged:false},
+   {id:'p1',seat:1,disadvantaged:true},
+   {id:'p2',seat:2,disadvantaged:false}
+ ]}
+]});
+assert.deepEqual(chosen.targets,['p0','p2'],
+ 'prefer nondisadvantaged secondary target even when its seat is later');
+assert.equal(chosen.disadvantage,0);
