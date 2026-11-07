@@ -65,6 +65,20 @@
  }
  // A JSON-serializable instruction cursor. Pauses before any ability whose
  // explicit target/path selection has not yet been supplied.
+ // Normalize prototype monster modifier cards to the same structured
+ // move/attack language as character actions. Future content packs can supply
+ // explicit `abilities` arrays and bypass the legacy modifier fields entirely.
+ function monsterSteps(profile,card){
+   if(!profile||!card)throw Error('Missing monster profile or card');
+   if(Array.isArray(card.abilities)){
+     for(const step of card.abilities)if(!['move','attack','heal','shield','retaliate','condition','infuse'].includes(step.type))throw Error('Unsupported scripted monster action');
+     return copy(card.abilities);
+   }
+   return [
+     {type:'move',value:Math.max(0,(profile.move||0)+(card.move||0))},
+     {type:'attack',value:Math.max(0,(profile.attack||0)+(card.attack||0)),range:Math.max(1,(profile.range||1)+(card.range||0)),condition:card.condition||null}
+   ];
+ }
  function beginSequence(state,actorId,steps){
    validate(state,actorId,steps);
    return {state:copy(state),cursor:{actorId,steps:copy(steps),index:0,events:[]},done:false};
@@ -183,5 +197,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,areaHexes,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,validTargets,neighbors,distance,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
