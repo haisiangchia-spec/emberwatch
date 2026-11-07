@@ -138,14 +138,29 @@
       !action||typeof action!=='object'||!Array.isArray(steps)||!steps.length)
      throw Error('Invalid hero action sequence');
    const allowed=new Set(['guard','shield','retaliate','infuse','heal','condition','attack']);
-   // Attacks retain their existing target-by-target continuation. Allow
-   // ordered pre-attack self effects, but never queue effects after a hit:
-   // post-hit may suspend for forced movement, retaliation or more targets.
+   // Keep the existing attack continuation authoritative while compiling
+   // declarative instructions before and after the hit. Post-hit instructions
+   // execute only once the final target and its retaliation have resolved.
    if(steps.some(step=>step?.type==='attack')){
-     if(steps.at(-1)?.type!=='attack'||steps.slice(0,-1).some(step=>
-       !['shield','retaliate','infuse'].includes(step?.type)||step.optional))
-       throw Error('Attack must be terminal after mandatory self effects');
-     const step=copy(steps.at(-1));
+     const attackIndex=steps.findIndex(step=>step?.type==='attack');
+     if(steps.slice(attackIndex+1).some(step=>step?.type==='attack')||
+        steps.slice(0,attackIndex).some(step=>
+          !['shield','retaliate','infuse'].includes(step?.type)||step.optional))
+       throw Error('Only one attack is supported after mandatory self effects');
+     const suffix=steps.slice(attackIndex+1).map(instruction=>{
+       const effect=copy(instruction);
+       if(!['shield','retaliate','infuse','heal','condition'].includes(effect.type))
+         throw Error('Unsupported post-attack effect: '+effect.type);
+       if(['heal','condition'].includes(effect.type)&&!effect.optional&&!deferTargets)
+         throw Error('Post-attack mandatory targets require deferred targeting');
+       if(effect.value==='action')effect.value=action.value;
+       if(effect.value!==undefined&&(!Number.isFinite(effect.value)||effect.value<0))
+         throw Error('Invalid post-attack effect value');
+       if(effect.type==='condition'&&(!effect.optional||typeof effect.condition!=='string'))
+         throw Error('Post-attack condition requires an optional named condition');
+       return effect;
+     });
+     const step=copy(steps[attackIndex]);
      if(step.optional)throw Error('Optional attack selection is not yet supported');
      if(step.value==='action')step.value=action.value;
      if(!Number.isFinite(step.value)||step.value<0)
@@ -154,8 +169,9 @@
        throw Error('Attack requires selected target');
      if(action.kind!=='attack')throw Error('Attack action kind required');
      const attackAction={...copy(action),value:step.value};
+     if(suffix.length)attackAction.postAttackSteps=suffix;
      const linked=linkedAttackSteps(attackAction);
-     const prefix=steps.slice(0,-1).map(instruction=>{
+     const prefix=steps.slice(0,attackIndex).map(instruction=>{
        const effect=copy(instruction);
        if(effect.value==='action')effect.value=action.value;
        if(effect.value!==undefined&&(!Number.isFinite(effect.value)||effect.value<0))
