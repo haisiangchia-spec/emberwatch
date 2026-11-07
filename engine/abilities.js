@@ -19,11 +19,11 @@
  }
  // Shared numerical hit calculation, used for both hero and monster attacks.
  // Guards in the prototype are one-hit barriers; persistent Shield is separate.
- function hitDamage({power,guard=0,shield=0,poison=false}){
+ function hitDamage({power,guard=0,shield=0,poison=false,miss=false}){
    for(const value of [power,guard,shield])if(!Number.isFinite(value))throw Error('Attack values must be finite numbers');
    if(power<0||guard<0||shield<0)throw Error('Attack values cannot be negative');
-   const raw=Math.max(0,power+(poison?1:0));
-   return {raw,guard,shield,damage:Math.max(0,raw-guard-shield)};
+   const raw=miss?0:Math.max(0,power+(poison?1:0));
+   return {raw,guard,shield,damage:miss?0:Math.max(0,raw-guard-shield)};
  }
  function retaliation(defender,attacker){
    if(!defender||!attacker||defender.hp<=0||attacker.hp<=0)return 0;
