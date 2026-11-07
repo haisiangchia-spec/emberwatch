@@ -254,7 +254,7 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:4,optional:true}],{targetId:'e0'}),/Optional attack selection/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:4},{type:'shield',value:1}],{targetId:'e0'}),
- /standalone attack/);
+ /Attack must be terminal/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:-1}],{targetId:'e0'}),/Invalid Attack/);
 console.log('F2 hero attack compiler and legacy continuation compatibility assertions passed');
@@ -276,3 +276,25 @@ assert.throws(()=>abilities.compileHeroQueue('p1',{
 },[{type:'guard',value:2},{type:'heal',value:1,range:2}]),
  /Mandatory targeted effects require selected target/);
 console.log('F2 deferred mandatory target compiler assertions passed');
+
+
+const mixedAttack=abilities.compileHeroQueue('p0',{
+ kind:'attack',value:3,range:1,which:'top',cardIndex:0,asBasic:false,
+ condition:'immobilize'
+},[
+ {type:'shield',value:1,duration:'round'},
+ {type:'attack',value:'action',range:1}
+],{targetId:'e0'});
+assert.deepEqual(mixedAttack.map(e=>e.type),[
+ 'heroAbilityEffect','heroAttackHit','heroAttackLinked','heroAttackPostHit']);
+assert.equal(mixedAttack[0].effect.value,1);
+assert.equal(mixedAttack[1].action.value,3);
+assert.equal(mixedAttack[2].step.condition,'immobilize');
+assert.deepEqual(JSON.parse(JSON.stringify(mixedAttack)),mixedAttack);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'shield',value:1,optional:true},{type:'attack',value:3}
+],{targetId:'e0'}),/Attack must be terminal/);
+assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,[
+ {type:'shield',value:Infinity},{type:'attack',value:3}
+],{targetId:'e0'}),/Invalid pre-attack effect/);
+console.log('F2 mixed ordered pre-attack effects and terminal hit conformance passed');
