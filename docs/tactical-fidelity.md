@@ -55,6 +55,19 @@ Test suite passing is evidence for tested paths, not a claim of rule-by-rule equ
 
 ---
 
+## F1 follow-up — v0.8.2
+
+Implemented in the HTML5 game and checked by **16 passing Chromium smoke tests**:
+- Wound damage on a hero's turn start enters the same interactive card-loss prevention workflow as monster damage. It is resolved **once** before the hero acts or long rests and does not apply Poison or Guard adjustments.
+- The Wound decision may sacrifice one uncommitted hand card or two different discard cards, or take 1 HP damage.
+- New original equipment **Steel Buckler** costs 4 gold; it can be spent for Guard +2 once between long rests. Spent state is saved and restored by a successful long rest.
+- Short-rest redraw now chooses a replacement only from the cards in that rest's recovered discard pile; it cannot lose an unrelated untouched hand card.
+- All prior browser smoke tests remain green.
+
+**Not yet exact Frosthaven rules:** The game still lacks a generic queued damage-event pipeline for scenario hazards and other damage types, complete item states (spent versus consumed, refresh versus recovery), damage prevention during asynchronous multiplayer, real persistent/active cards, full card-loss data and class-specific rules. The original 'Steel Buckler' is an engine testing aid, not an official Frosthaven item. Long-rest handling is still simplified relative to full item/condition interactions.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
