@@ -1,3 +1,11 @@
+# Emberwatch v0.13.2 — Generic Movement Compilation
+
+All live hero Move actions now compile their already-planned paths into serializable per-hex `heroMoveStep` events, using the unchanged tactical movement and terrain resolver. Structured cards can append a supported optional effect after movement. *Forward March* demonstrates Move 4 → optional Shield 1. Tests cover reload, one-time movement, effect decisions and invalid routes.
+
+F2 is still open for arbitrary mixed Move/Attack sequences and advanced class effects.
+
+---
+
 # Emberwatch v0.13.1 — Data-Driven Post-Attack Abilities
 
 The ability compiler now stores validated post-attack instructions as a serialized suffix. After linked effects and retaliation, the live combat engine starts a queue containing only the remaining instructions and final action completion. *Hammerfall* demonstrates Attack 5 → optional Shield 1. Tests cover execution and skipping across reload during retaliation.
