@@ -17,6 +17,19 @@
                   [[1,0],[0,-1],[-1,-1],[-1,0],[-1,1],[0,1]];
    return dirs.map(([q,r])=>({q:pos.q+q,r:pos.r+r}));
  }
+ // Shared numerical hit calculation, used for both hero and monster attacks.
+ // Guards in the prototype are one-hit barriers; persistent Shield is separate.
+ function hitDamage({power,guard=0,shield=0,poison=false}){
+   for(const value of [power,guard,shield])if(!Number.isFinite(value))throw Error('Attack values must be finite numbers');
+   if(power<0||guard<0||shield<0)throw Error('Attack values cannot be negative');
+   const raw=Math.max(0,power+(poison?1:0));
+   return {raw,guard,shield,damage:Math.max(0,raw-guard-shield)};
+ }
+ function retaliation(defender,attacker){
+   if(!defender||!attacker||defender.hp<=0||attacker.hp<=0)return 0;
+   return (defender.active||[]).filter(effect=>effect.type==='retaliate'&&
+      distance(defender,attacker)<=(effect.range??1)).reduce((sum,e)=>sum+Math.max(0,e.value||0),0);
+ }
  function validate(state,actorId,steps){
    if(!state||!state.units||!state.units[actorId])throw Error('Unknown actor');
    if(!Array.isArray(steps)||steps.length===0)throw Error('Missing ability steps');
@@ -146,7 +159,7 @@
          if(!Number.isFinite(bonus))throw Error('Invalid modifier');
          const attack=Math.max(0,(step.value||0)+bonus);
          const shield=(target.active||[]).filter(e=>e.type==='shield').reduce((s,e)=>s+e.value,0)+(target.shield||0);
-         const damage=Math.max(0,attack-shield);
+         const damage=hitDamage({power:attack,shield}).damage;
          target.hp=Math.max(0,target.hp-damage);
          events.push({type:'attack',actor:actorId,target:id,attack,shield,damage});
          // Linked effects resolve before a surviving defender retaliates.
@@ -172,8 +185,7 @@
          }
          // A defender killed by damage cannot retaliate. Check distance after
          // linked displacements; normal shields do not reduce retaliate damage.
-         const ret=target.hp>0?(target.active||[]).filter(e=>e.type==='retaliate'&&distance(actor,target)<=(e.range??1))
-                    .reduce((sum,e)=>sum+e.value,0):0;
+         const ret=retaliation(target,actor);
          if(ret>0&&actor.hp>0){
            actor.hp=Math.max(0,actor.hp-ret);
            events.push({type:'retaliate',actor:id,target:actorId,damage:ret});
@@ -197,5 +209,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
