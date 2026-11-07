@@ -124,6 +124,20 @@ Implemented in the HTML5 game:
 
 ---
 
+## Milestone 1 continuation — v0.10.4 saved monster-focus checkpoints
+
+Implemented in the HTML5 game and automated tests:
+- New `engine/monster-focus.js`: pure, deterministic candidate selection with reproducible tie-break ranking over available attack positions. This extracts the **existing Emberwatch policy**, not a verified Frosthaven focus specification.
+- Explicit `monsterFocus` event inserted after `monsterStart` and before the scripted monster's movement and attacks.
+- Focused hero ID, chosen goal, route and movement destination are saved in `monsterTurnPlans`; a trace of candidate rankings is retained for debugging during activation.
+- Monster movement and attack events read the saved focus decision instead of recomputing it on resumption. The stored focus survives a page reload during a damage-prevention interruption and is removed once the monster turn ends.
+- Unit tests cover the candidate tie breakers and JSON reproducibility. An end-to-end Chromium regression verifies saved focus and route across an interrupted attack and cleanup afterward.
+- GitHub Actions code-bearing run **42376126309** passed **41 Chromium browser tests** and the existing Node assertions.
+
+**Important limitations:** This is a **structural milestone** only. The candidate generation, shortest routes, focus priorities, tie-break sequence, line of sight and monster movement/attack edge cases still need a rule-by-rule Frosthaven audit. Legacy monster modifier cards continue through an atomic compatibility event rather than the fully stepwise queue. Summons and specialized AI remain unimplemented. Milestone 1 is not closed.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
