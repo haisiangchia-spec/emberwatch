@@ -16,8 +16,9 @@ const tied=[
 ];
 assert.equal(choose(tied).chosen.targetId,'p2','initiative before seat');
 tied[2].initiative=20;
-assert.equal(choose(tied).chosen.targetId,'p0','seat tie breaker');
-assert.deepEqual(choose([]),{chosen:null,ranking:[]});
+assert.equal(choose(tied,()=>0).chosen.targetId,'p0','first equal-ranked focus can be chosen');
+assert.equal(choose(tied,()=>0.999).chosen.targetId,'p1','later equal-ranked focus can be chosen');
+assert.deepEqual(choose([]),{chosen:null,ranking:[],ties:0});
 assert.deepEqual(choose(JSON.parse(JSON.stringify(tied))).ranking,choose(tied).ranking);
 assert.throws(()=>choose(null),/array/);
 assert.throws(()=>choose([{targetId:'p0',cost:-2,distance:0,initiative:1,seat:0,row:1,col:1}]),/Invalid/);
@@ -76,11 +77,11 @@ const multiFixtures=[
    {id:'p1',seat:1,disadvantaged:false},
    {id:'p2',seat:2,disadvantaged:false}]}
 ];
-let chosen=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:multiFixtures});
+let chosen=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:multiFixtures},()=>0.999);
 assert.deepEqual(chosen,{q:1,r:0,cost:1,negative:0,targets:['p0','p1'],count:2,disadvantage:0},
  'prioritize safe max targets and zero disadvantage with minimum movement');
 chosen=multiTargetPosition({focusId:'p0',maxTargets:3,move:2,candidates:multiFixtures});
-assert.deepEqual(chosen.targets,['p0','p1','p2'],
+assert.deepEqual(new Set(chosen.targets),new Set(['p0','p1','p2']),
  'max additional targets before disadvantage');
 assert.equal(chosen.q,2);
 chosen=multiTargetPosition({focusId:'p0',maxTargets:3,move:1,candidates:multiFixtures});
@@ -100,6 +101,29 @@ chosen=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:[
    {id:'p2',seat:2,disadvantaged:false}
  ]}
 ]});
-assert.deepEqual(chosen.targets,['p0','p2'],
+assert.deepEqual(new Set(chosen.targets),new Set(['p0','p2']),
  'prefer nondisadvantaged secondary target even when its seat is later');
 assert.equal(chosen.disadvantage,0);
+
+const randomTies=[
+ {q:1,r:1,cost:1,negative:0,occupied:false,targets:[
+  {id:'p0',seat:0,disadvantaged:false},{id:'p1',seat:1,disadvantaged:false},
+  {id:'p2',seat:2,disadvantaged:false}]},
+ {q:2,r:1,cost:1,negative:0,occupied:false,targets:[
+  {id:'p0',seat:0,disadvantaged:false},{id:'p1',seat:1,disadvantaged:false},
+  {id:'p2',seat:2,disadvantaged:false}]}
+];
+const firstChoice=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:randomTies},()=>0);
+const lastChoice=multiTargetPosition({focusId:'p0',maxTargets:2,move:2,candidates:randomTies},()=>0.999);
+assert.equal(firstChoice.q,1,'first tied destination selectable');
+assert.equal(lastChoice.q,2,'second tied destination selectable');
+assert.notDeepEqual(firstChoice.targets,lastChoice.targets,'target order and selection can change');
+assert.ok(firstChoice.targets.includes('p0')&&lastChoice.targets.includes('p0'),'primary focus retained');
+assert.deepEqual(new Set([...firstChoice.targets,...lastChoice.targets]),new Set(['p0','p1','p2']));
+const retreatTies={...baseRetreat,candidates:[
+ {q:1,r:2,cost:1,negative:0,distance:2,lineOfSight:true,occupied:false},
+ {q:2,r:2,cost:1,negative:0,distance:2,lineOfSight:true,occupied:false}
+]};
+assert.equal(rangedRetreat(retreatTies,()=>0).q,1);
+assert.equal(rangedRetreat(retreatTies,()=>0.999).q,2);
+assert.throws(()=>choose(tied,()=>1),/Invalid random roll/);
