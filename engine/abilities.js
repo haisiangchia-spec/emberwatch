@@ -133,7 +133,7 @@
  // Translate licensed/original structured card instructions into the stable
  // live hero combat queue. No display-string parsing or implied abilities.
  // Unsupported steps fail at compilation, before changing game state.
- function compileHeroQueue(actorId,action,steps,{targetId=null}={}){
+ function compileHeroQueue(actorId,action,steps,{targetId=null,deferTargets=false}={}){
    if(typeof actorId!=='string'||!actorId||
       !action||typeof action!=='object'||!Array.isArray(steps)||!steps.length)
      throw Error('Invalid hero action sequence');
@@ -178,10 +178,13 @@
      if(step.value!==undefined&&(!Number.isFinite(step.value)||step.value<0))
        throw Error('Invalid instruction value');
      if(['heal','condition'].includes(step.type)&&!step.optional){
-       if(typeof targetId!=='string'||!targetId)
-         throw Error('Mandatory targeted effects require selected target');
        if(step.type!=='heal')throw Error('Unsupported mandatory targeted effect: '+step.type);
-       events.push({type:'heroAbilityEffect',actorId,effect:step,targetId});
+       if(typeof targetId!=='string'||!targetId){
+         if(!deferTargets)throw Error('Mandatory targeted effects require selected target');
+         // A missing target is a deliberate runtime selection checkpoint,
+         // never an instruction to silently skip the mandatory ability.
+         events.push({type:'heroAbilityEffect',actorId,effect:step,needsTarget:true});
+       }else events.push({type:'heroAbilityEffect',actorId,effect:step,targetId});
        continue;
      }
      if(step.type==='condition'&&typeof step.condition!=='string')
