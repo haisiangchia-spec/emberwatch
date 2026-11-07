@@ -286,6 +286,21 @@ Implemented:
 
 ---
 
+## Dynamic movement obstruction checks — v0.11.4
+
+Implemented:
+- Saved hero movement events now revalidate each next hex against **current** adjacency, discovery, walls, rocks and occupied figures before entry, including after terrain-damage interruption and browser reload.
+- If a planned hero hex is no longer legal, the engine terminates only the remaining movement events, preserves already resolved damage/terrain changes and executes card-action completion without teleporting or repeating earlier steps.
+- Saved automatic icy-slide steps now also require their supporting ice to still exist and their next destination to remain unoccupied/unblocked. A changed icy chain terminates safely rather than replaying a stale slide.
+- Monster movement revalidates every planned step before entering, and rechecks that each zero-cost slide still belongs to a valid icy chain on the **live** board. Newly blocked slides stop before the obstruction; attacks still require their usual range and line-of-sight checks.
+- Existing monster permissions remain: monsters can move through allied figures in ordinary walking steps, but cannot stop on an occupied destination or slide through another figure.
+- No future random choice is used to reroute a previously committed movement plan; the already-selected destination/route remains saved. The intentional randomized tie-breaking policy applies only when making a *new* decision.
+- Browser regressions simulate restored in-flight queues with an opponent blocking a hero's next step, a new rock interrupting a monster ice slide, disappearing ice on a saved hero route, and a monster crossing an allied figure. Existing browser tests cover the wider tactical prototype.
+
+**Remaining scope:** This is safe stopping on a dynamically invalid route, **not** a full reactive replan. More complete adaptive route recalculation, door reveals mid-path, larger figures, special traversal, animation/timing, and multiplayer concurrent consistency remain open. Official card and monster catalog coverage and exact Frosthaven targeting/focus rules are not complete.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
