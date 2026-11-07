@@ -17,7 +17,7 @@ const tied=[
 assert.equal(choose(tied).chosen.targetId,'p2','initiative before seat');
 tied[2].initiative=20;
 assert.equal(choose(tied,()=>0).chosen.targetId,'p0','first equal-ranked focus can be chosen');
-assert.equal(choose(tied,()=>0.999).chosen.targetId,'p1','later equal-ranked focus can be chosen');
+assert.equal(choose(tied,()=>0.999).chosen.targetId,'p2','last equal-ranked focus can be chosen');
 assert.deepEqual(choose([]),{chosen:null,ranking:[],ties:0});
 assert.deepEqual(choose(JSON.parse(JSON.stringify(tied))).ranking,choose(tied).ranking);
 assert.throws(()=>choose(null),/array/);
