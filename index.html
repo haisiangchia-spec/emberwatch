@@ -52,7 +52,7 @@ function unitEnd(u){for(const k of u._turnConditions||[])if(!['poison','wound'].
 function infuse(element){if(!element)return;state.elements[element]=2;log(element.toUpperCase()+' infused (strong).')}
 function consumeElement(element){if(!element||!state.elements[element])return false;state.elements[element]=0;log(element.toUpperCase()+' consumed: +1 action power.');return true}
 function tickElements(){for(const e of ELEMENT_TYPES)state.elements[e]=Math.max(0,state.elements[e]-1)}
-function rollAttack(base,deck,attacker){if(hasCondition(attacker,'strengthen')===hasCondition(attacker,'muddle'))return attackDamage(base,deck);const a=attackDamage(base,deck),b=attackDamage(base,deck),strong=hasCondition(attacker,'strengthen');return (strong?a.damage>=b.damage:a.damage<=b.damage)?{...a,second:b.mod}:{...b,second:a.mod}}
+function rollAttack(base,deck,attacker){return window.EmberwatchAbilities.chooseRoll(()=>attackDamage(base,deck),{strengthen:hasCondition(attacker,'strengthen'),muddle:hasCondition(attacker,'muddle')})}
 const BASE_MODIFIERS=[-2,-1,-1,-1,-1,-1,0,0,0,0,0,0,1,1,1,1,1,2,'null','double'];
 const shuffled=a=>{let out=a.slice();for(let i=out.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}return out};
 const freshModifier=()=>({draw:shuffled(BASE_MODIFIERS),discard:[],reshuffle:false});
