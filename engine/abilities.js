@@ -19,6 +19,14 @@
  }
  // Shared numerical hit calculation, used for both hero and monster attacks.
  // Guards in the prototype are one-hit barriers; persistent Shield is separate.
+ function chooseRoll(draw,{strengthen=false,muddle=false}={}){
+   if(typeof draw!=='function')throw Error('Modifier draw callback required');
+   const a=draw();
+   if(strengthen===muddle)return a;
+   const b=draw();
+   const firstIsBest=strengthen?a.damage>=b.damage:a.damage<=b.damage;
+   return firstIsBest?{...a,second:b.mod}:{...b,second:a.mod};
+ }
  function hitDamage({power,guard=0,shield=0,poison=false,miss=false}){
    for(const value of [power,guard,shield])if(!Number.isFinite(value))throw Error('Attack values must be finite numbers');
    if(power<0||guard<0||shield<0)throw Error('Attack values cannot be negative');
@@ -209,5 +217,5 @@
    for(const u of Object.values(next.units))u.active=(u.active||[]).filter(e=>e.duration!==duration);
    return next;
  }
- return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
+ return Object.freeze({apply,validTargets,neighbors,distance,hitDamage,chooseRoll,retaliation,areaHexes,monsterSteps,beginSequence,resumeSequence,clearEffects});
 });
