@@ -1914,7 +1914,7 @@ test('hero queued route stops safely if an enemy occupies its next hex after rel
  expect(errors).toEqual([]);
 });
 
-test('monster stops an old planned icy chain when a slide hex becomes blocked',async ({page})=>{
+test('monster reroutes an old planned icy chain when a slide hex becomes blocked',async ({page})=>{
  const errors=monitorErrors(page);
  await openCleanGame(page);
  await page.evaluate(()=>{
@@ -1948,9 +1948,10 @@ test('monster stops an old planned icy chain when a slide hex becomes blocked',a
  await page.reload();
  await page.locator('#takeDamage').click();
  const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
- expect([st.enemies[0].q,st.enemies[0].r]).toEqual([2,3]);
+ expect([st.enemies[0].q,st.enemies[0].r]).not.toEqual([3,3]);
+ expect(st.enemies[0].id).toBe('blocked-ice');
  expect(st.modifiers.monsters.discard).toHaveLength(0);
- expect(st.journal.some(x=>x.includes('newly blocked movement hex'))).toBe(true);
+ expect(st.journal.some(x=>x.includes('reroutes toward its original focus'))).toBe(true);
  expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
