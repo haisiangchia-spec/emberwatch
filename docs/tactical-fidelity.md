@@ -350,6 +350,16 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.5 shared optional target choices
+
+- Replaced Heal-only optional target eligibility with `EmberwatchAbilities.optionalTargetIds`, a reusable range/team/line-of-sight contract for optional **Heal** (friendly) and **Condition** (enemy). The live decision interface derives eligible targets from current figures, validates a persisted target after reload, and disables execution when no longer eligible.
+- A serializable action queue can resolve **multiple optional steps in order**, such as Condition then Heal, with distinct persisted decisions and no duplicate earlier Guard, damage or condition application.
+- Targeted Condition delegates to the generic ability interpreter and writes the validated result through the existing live condition logger; Heal retains the game's existing cleanse semantics.
+- Node assertions cover teams, range and line-of-sight; browser regressions cover an interrupted two-step sequence and target invalidation.
+- **Open F2 gaps:** complete action/card schema, optional Push/Pull, player-directed targeting for attack sequences, generic ability duration and immunity rules, and full conversion of hero/monster handlers. This is not full tactical fidelity.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
