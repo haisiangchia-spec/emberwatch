@@ -97,6 +97,20 @@ Implemented and tested:
 
 ---
 
+## Milestone 1 continuation — v0.10.2 queued hero attacks
+
+Implemented and tested:
+- Hero attacks now enqueue separate **Hit** and **Post-Hit** events in the shared serializable combat queue.
+- Hit events consume the attack modifier, apply actual damage and conditions, award attack XP and remove defeated monsters.
+- Surviving targets with a Push/Pull follow-up pause the queue **between hit and post-hit**. The selected target, legal destinations and event cursor are persisted, allowing a page reload before the player chooses to move the target or decline movement.
+- Post-hit resolution checks surviving defenders' Retaliate after the optional displacement; the subsequent damage-prevention prompt can itself pause/resume another queued continuation.
+- A player cannot end the hero's turn or choose another action while a queued forced-movement decision remains unresolved.
+- Deterministic browser tests exercise accepting and declining Push after reload, one-time modifier draws, Retaliate timing and interruption safety. The code-bearing run **42375080931** passed **37 Chromium tests**, with unit tests also green.
+
+**Open Milestone 1 gaps:** Area/multiple-target attack targeting UI state is not fully persistent across arbitrary reloads; monster AI focus and path selection are still implemented outside the generic queue; several hero effects and condition/terrain triggers still require dedicated handlers. Full multiplayer privacy and atomic shared-state updates remain unverified. This continues the staged migration; it does not establish complete tactical fidelity.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
