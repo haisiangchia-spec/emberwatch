@@ -895,3 +895,79 @@ test('end turn cannot abandon an unresolved queued Push decision',async ({page})
  expect(after.pendingHeroChoice).toBeNull();
  expect(after.combatQueue).toBeNull();
 });
+
+test('multi-target card remembers selected targets and modifier draws across reloads',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:2,initiative:43}];s.turnIndex=0;
+  s.players[2].picked=[5,0];s.modifiers.heroes[2].draw=[0,0,0];
+  s.modifiers.heroes[2].discard=[];
+  s.enemies=[
+   {id:'first',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{}},
+   {id:'second',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
+  ];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingTargeting.actorId).toBe('p2');
+ expect(st.pendingTargeting.action.multiRemaining).toBe(2);
+ await page.reload();
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ const firstHp=st.enemies.find(e=>e.id==='first').hp;
+ const used=st.modifiers.heroes[2].discard.length;
+ expect(firstHp).toBeLessThan(99);
+ expect(st.pendingTargeting.action.targetIds).toEqual(['first']);
+ expect(st.pendingTargeting.action.multiRemaining).toBe(1);
+ await page.reload();
+ await expect(page.locator('#board polygon.selected')).toHaveCount(1);
+ await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='first').hp).toBe(firstHp);
+ expect(st.enemies.find(e=>e.id==='second').hp).toBeLessThan(99);
+ expect(st.modifiers.heroes[2].discard.length).toBe(used+1);
+ expect(st.pendingTargeting).toBeNull();
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('area anchor and remaining area targets survive repeated reloads',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.order=[{type:'player',id:2,initiative:58}];s.turnIndex=0;
+  s.players[2].picked=[1,0];s.modifiers.heroes[2].draw=[0,0,0];
+  s.modifiers.heroes[2].discard=[];
+  s.enemies=[
+   {id:'area-one',name:'Ash Raider',hp:99,maxHp:99,q:2,r:4,conditions:{}},
+   {id:'area-two',name:'Ash Raider',hp:99,maxHp:99,q:2,r:3,conditions:{}}
+  ];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('[data-do="top"]').click();
+ await expect(page.locator('#actionUI')).toContainText('anchor for the area pattern');
+ await page.reload();
+ await expect(page.locator('#actionUI')).toContainText('anchor for the area pattern');
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ let st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.pendingTargeting.action.areaTargets).toEqual(['area-one','area-two']);
+ await page.reload();
+ await expect(page.locator('#board polygon.selected')).toHaveCount(2);
+ await page.locator('#board polygon[data-q="2"][data-r="4"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ const hp=st.enemies.find(e=>e.id==='area-one').hp;
+ await page.reload();
+ await expect(page.locator('#board polygon.selected')).toHaveCount(1);
+ await page.locator('#board polygon[data-q="2"][data-r="3"]').click();
+ st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='area-one').hp).toBe(hp);
+ expect(st.enemies.find(e=>e.id==='area-two').hp).toBeLessThan(99);
+ expect(st.pendingTargeting).toBeNull();
+ expect(errors).toEqual([]);
+});
