@@ -405,6 +405,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.13.1 post-attack instruction suffixes
+
+- The structured compiler accepts validated **post-attack Shield/Retaliate/Infuse and optional Heal/Condition** instructions, storing a serializable suffix on the attack action (not executing it with the hit). Unsupported post-attack movement, repeated attacks, invalid values and undeferred mandatory target choices fail compilation.
+- After all selected attack targets, linked effects and retaliation finish, the existing attack continuation calls `compileHeroQueue` for **only the remaining suffix**. The original attack modifier, hit and linked effects cannot be redrawn by a saved suffix checkpoint. The same path is used after a saved retaliation damage decision.
+- Vanguard *Hammerfall* now demonstrates Attack 5 followed by optional Shield 1. Browser regressions cover normal attack → optional choice and retaliation → optional choice across save/reload.
+- **Milestone still open:** complete attack sequences with attack-dependent target lists and mixed movement, generic move instruction compilation, optional linked Push/Pull and richer class-specific effects. A future conformance test must check forced Push/Pull followed by a suffix.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
