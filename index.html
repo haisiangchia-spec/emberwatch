@@ -731,7 +731,8 @@ function runCombatQueue(){
        axialDist(from,hex)!==1||
        (mode==='walk'&&(wall(hex.q,hex.r)||rock(hex.q,hex.r)||
          state.enemies.some(e=>e.hp>0&&e.q===hex.q&&e.r===hex.r)))||
-       (event.icyExtra&&(wall(hex.q,hex.r)||rock(hex.q,hex.r)||!!occupied))||
+       (event.icyExtra&&(wall(hex.q,hex.r)||rock(hex.q,hex.r)||
+         !contains(state.icy,from.q,from.r)||!!occupied))||
        (!!occupied&&event.finalStep);
      if(invalid){
        log(actor.name+' stops moving because a planned hex is no longer accessible.');
