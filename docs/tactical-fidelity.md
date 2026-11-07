@@ -34,6 +34,27 @@ The ten passing Chromium smoke tests verify specific example flows, not comprehe
 
 ---
 
+## F1 follow-up — v0.8.1
+
+Implemented in the live prototype and verified with 13 Chromium browser tests:
+- End-of-round short-rest phase with one decision per eligible character, before element waning.
+- Random card loss, recovery of remaining discard, and a single optional one-damage redraw choosing a different random card.
+- Interactive attack-damage resolution allowing HP loss, one eligible hand card loss, or two distinct discard cards to negate the damage.
+- Committed selection cards are excluded from the eligible hand pool before the character acts.
+- Damage-prevention decisions pause monster execution and resume after the player resolves them.
+- Attack conditions are still applied when damage is prevented (if the target remains active).
+
+Important remaining gaps:
+- The interactive prevention prompt currently covers **monster attack damage**, not all damage sources (notably Wound, hazardous terrain, and scenario damage). These must use the same damage-event pipeline before F1 can be declared complete.
+- Long rest resolves the required card recovery and Heal 2 but does not yet implement fully optional healing, cleansing implications, or refresh of spent items in a meaningful equipment system.
+- Card-loss properties are hard-coded for four original demonstration powers rather than read from official/licensed ability data.
+- Full active/persistent bonuses, temporary/card recovery effects, stateful item use and exhaustion cleanup of summons are incomplete.
+- Four-browser synchronized decision locking, online privacy, and race-condition handling are still unverified.
+
+Test suite passing is evidence for tested paths, not a claim of rule-by-rule equivalence.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
