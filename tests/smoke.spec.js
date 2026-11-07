@@ -2062,3 +2062,88 @@ test('hero reroutes after interrupted damage without replaying a consumed trap',
  expect(st.combatQueue).toBeNull();
  expect(errors).toEqual([]);
 });
+
+
+test('monster movement resumes from a saved hex checkpoint without replaying terrain',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'enemy',id:'Ash Raider',initiative:20},
+   {type:'player',id:0,initiative:30}];s.turnIndex=0;
+  s.scenario.revealed=[0,1,2];s.scenario.level=2;
+  s.players[0].q=5;s.players[0].r=3;
+  for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'checkpoint',name:'Ash Raider',hp:8,maxHp:8,q:2,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[];s.icy=[];s.hazardous=[];s.traps=[];
+  s.monsterTurnPlans={checkpoint:{skip:false,targetId:'p0',focused:true,
+   stop:{q:4,r:3},goal:{q:4,r:3},spec:{move:3,attack:2,range:1},
+   path:[{q:1,r:3},{q:2,r:3},{q:3,r:3},{q:4,r:3}]}};
+  s.monsterReveals={'Ash Raider':{name:'Checkpoint',initiative:20,
+    abilities:[{type:'move',value:3},{type:'attack',value:2,range:1}]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  s.combatQueue={version:1,owner:'monster',index:2,paused:true,pauseReason:'damage',
+    events:[
+     {type:'monsterMove',actorId:'checkpoint',monsterType:'Ash Raider'},
+     {type:'monsterMoveHex',actorId:'checkpoint',hex:{q:2,r:3},
+       budget:3,spent:0,reroutes:0},
+     {type:'monsterMoveHex',actorId:'checkpoint',hex:{q:3,r:3},
+       budget:3,spent:1,reroutes:0},
+     {type:'monsterMoveHex',actorId:'checkpoint',hex:{q:4,r:3},
+       budget:3,spent:2,reroutes:0},
+     {type:'monsterAttack',actorId:'checkpoint',monsterType:'Ash Raider',
+       stepIndex:1,step:{type:'attack',value:2,range:1}},
+     {type:'monsterFinish',actorId:'checkpoint',monsterType:'Ash Raider'}]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Prior event',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).toEqual([4,3]);
+ expect(st.traps).toEqual([]);
+ expect(st.modifiers.monsters.discard).toHaveLength(1);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('monster hex checkpoint reroutes around newly blocked step with unspent budget',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='damage';s.order=[{type:'enemy',id:'Ash Raider',initiative:20},
+   {type:'player',id:0,initiative:30}];s.turnIndex=0;
+  s.scenario.revealed=[0,1,2];
+  s.players[0].q=5;s.players[0].r=3;
+  for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'reroute-hex',name:'Ash Raider',hp:9,maxHp:9,q:2,r:3,conditions:{}}];
+  s.walls=[];s.rocks=[[3,3]];s.icy=[];s.hazardous=[];s.traps=[];
+  s.monsterTurnPlans={'reroute-hex':{skip:false,targetId:'p0',focused:true,
+    stop:{q:4,r:3},goal:{q:4,r:3},spec:{move:4,attack:2,range:1},
+    path:[{q:1,r:3},{q:2,r:3},{q:3,r:3},{q:4,r:3}]}};
+  s.monsterReveals={'Ash Raider':{name:'Reroute',initiative:20,
+   abilities:[{type:'move',value:4},{type:'attack',value:2,range:1}]}};
+  s.modifiers.monsters.draw=[0,0,0];s.modifiers.monsters.discard=[];
+  s.combatQueue={version:1,owner:'monster',index:2,paused:true,pauseReason:'damage',
+   events:[
+    {type:'monsterMove',actorId:'reroute-hex',monsterType:'Ash Raider'},
+    {type:'monsterMoveHex',actorId:'reroute-hex',hex:{q:2,r:3},budget:4,spent:0,reroutes:0},
+    {type:'monsterMoveHex',actorId:'reroute-hex',hex:{q:3,r:3},budget:4,spent:1,reroutes:0},
+    {type:'monsterMoveHex',actorId:'reroute-hex',hex:{q:4,r:3},budget:4,spent:2,reroutes:0},
+    {type:'monsterAttack',actorId:'reroute-hex',monsterType:'Ash Raider',
+     stepIndex:1,step:{type:'attack',value:2,range:1}},
+    {type:'monsterFinish',actorId:'reroute-hex',monsterType:'Ash Raider'}]};
+  s.pendingDamage={heroIndex:0,amount:1,source:'Prior event',condition:null,
+    resume:'queue',monsterType:null,sourceId:null,attack:false};
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#takeDamage').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect([st.enemies[0].q,st.enemies[0].r]).not.toEqual([3,3]);
+ expect(st.journal.some(x=>x.includes('reroutes toward its original focus'))).toBe(true);
+ expect(st.combatQueue).toBeNull();
+ expect(errors).toEqual([]);
+});
