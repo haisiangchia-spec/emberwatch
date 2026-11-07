@@ -179,3 +179,22 @@ assert.deepEqual(abilities.linkedAttackSteps({followupType:'push',asBasic:true})
 assert.throws(()=>abilities.linkedAttackSteps({followupType:'teleport'}),/Unsupported linked movement/);
 assert.deepEqual(JSON.parse(JSON.stringify(linkedSteps)),linkedSteps);
 console.log('F2 ordered attack-linked step assertions passed');
+
+
+const optionalCandidatesScene=state();
+assert.deepEqual(
+ abilities.optionalTargetIds(optionalCandidatesScene,'hero',
+   {type:'heal',value:2,range:2}).sort(),
+ ['ally','hero']);
+assert.deepEqual(
+ abilities.optionalTargetIds(optionalCandidatesScene,'hero',
+   {type:'condition',condition:'muddle',range:1}),
+ ['e1']);
+const obscured=state();obscured.lineOfSight={'hero>e1':false,'hero>e2':true};
+assert.deepEqual(abilities.optionalTargetIds(obscured,'hero',
+ {type:'condition',condition:'muddle',range:2}),['e2']);
+assert.throws(()=>abilities.optionalTargetIds(optionalCandidatesScene,'hero',
+ {type:'shield',value:1}),/Unsupported optional targeting/);
+assert.throws(()=>abilities.optionalTargetIds(optionalCandidatesScene,'hero',
+ {type:'heal',range:-1}),/Invalid optional ability range/);
+console.log('F2 shared optional target eligibility assertions passed');
