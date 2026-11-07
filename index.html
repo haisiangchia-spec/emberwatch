@@ -1168,7 +1168,8 @@ function resolveQueuedMonsterEffect(event){
    monsterProfile({name:event.monsterType}),state.monsterReveals[event.monsterType])[event.stepIndex];
  if(!enemy||!step)return;
  if(step.type==='heal'){
-   const amount=healUnit(enemy,step.value||0);
+   const amount=window.EmberwatchAbilities.healAmount(enemy,step.value||0);
+   enemy.hp+=amount;
    log(enemy.name+' heals '+amount+' HP.')
  }else if(step.type==='shield'||step.type==='retaliate'){
    activateTacticalEffects(enemy,[step])
