@@ -254,7 +254,7 @@ assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:4,optional:true}],{targetId:'e0'}),/Optional attack selection/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:4},{type:'move',value:1}],{targetId:'e0'}),
- /Unsupported post-attack effect/);
+ /Move must precede supported post-move effects/);
 assert.throws(()=>abilities.compileHeroQueue('p0',attackAction,
  [{type:'attack',value:-1}],{targetId:'e0'}),/Invalid Attack/);
 console.log('F2 hero attack compiler and legacy continuation compatibility assertions passed');
