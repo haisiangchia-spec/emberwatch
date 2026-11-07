@@ -360,6 +360,15 @@ Implemented:
 
 ---
 
+## F2 continuation — v0.12.6 structured hero action compilation
+
+- New generic `EmberwatchAbilities.compileHeroQueue(actorId,action,steps)` translates ordered, structured card instructions into persistent live `heroGuard`, `heroAbilityEffect` and `heroActionComplete` events. Instructions use explicit types and parameters, never display text.
+- All live Guard actions now use the compiler. Existing Guard cards are adapted from their legacy values and `tactical` effects; the Warden *Aid the Fallen* bottom action now directly declares `sequence.b` with Guard 2 (action-scaled) followed by optional Heal 2.
+- The compiler rejects unsupported instructions, invalid values, and mandatory targeted effects not yet supported by the live generic decision UI. Unit tests cover ordering/serialization/failure cases; browser regression covers queue persistence and execution from a structured card.
+- This is an **initial data-driven compiler**, not complete F2. Attack, movement, mandatory targeting and advanced linked-effect sequences still use specialized handlers. Expand the compiler and unified interactive executor before marking F2 complete.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
