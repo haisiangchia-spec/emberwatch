@@ -1468,3 +1468,34 @@ test('pushing a monster onto hazardous terrain damages without removing terrain'
  expect(st.journal.filter(x=>x.includes('triggers hazardous'))).toHaveLength(1);
  expect(errors).toEqual([]);
 });
+
+test('monster entering a mandatory trap mid-path dies and cannot make its queued attack',async ({page})=>{
+ const errors=monitorErrors(page);
+ await openCleanGame(page);
+ await page.evaluate(()=>{
+  const key='emberwatch_save_v1',s=JSON.parse(localStorage.getItem(key));
+  s.phase='act';s.round=2;s.scenario={kind:'classic',level:3};
+  s.order=[{type:'player',id:0,initiative:10},{type:'enemy',id:'Ash Raider',initiative:20}];
+  s.turnIndex=0;s.players[0].picked=[0,1];s.players[0].q=4;s.players[0].r=3;
+  for(let i=1;i<4;i++){s.players[i].hp=0;s.players[i].exhausted=true}
+  s.enemies=[{id:'terrain-victim',name:'Ash Raider',hp:3,maxHp:3,q:1,r:3,conditions:{}}];
+  const open=new Set(['1,3','2,3','3,3','4,3']);
+  s.walls=[];for(let q=0;q<8;q++)for(let r=0;r<6;r++)if(!open.has(q+','+r))s.walls.push([q,r]);
+  s.rocks=[];s.difficult=[];s.traps=[[2,3]];s.hazardous=[];
+  s.monsterReveals={'Ash Raider':{name:'Corridor Lunge',initiative:20,abilities:[
+    {type:'move',value:2},{type:'attack',value:2,range:1}
+  ]}};
+  s.modifiers.monsters.draw=[0,0];s.modifiers.monsters.discard=[];
+  localStorage.setItem(key,JSON.stringify(s));
+ });
+ await page.reload();
+ await page.locator('#endTurn').click();
+ const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('emberwatch_save_v1')));
+ expect(st.enemies.find(e=>e.id==='terrain-victim')).toBeUndefined();
+ expect(st.traps).toEqual([]);
+ expect(st.journal.filter(x=>x.includes('triggers trap'))).toHaveLength(1);
+ expect(st.journal.filter(x=>x.includes(' attacks '))).toHaveLength(0);
+ expect(st.modifiers.monsters.discard).toHaveLength(0);
+ expect(st.loot).toContainEqual([2,3]);
+ expect(errors).toEqual([]);
+});
