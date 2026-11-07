@@ -68,6 +68,22 @@ Implemented in the HTML5 game and checked by **16 passing Chromium smoke tests**
 
 ---
 
+## Milestone 1 — Shared combat queue, first integrated slice (v0.10.0)
+
+Implemented in the playable HTML5 prototype:
+
+- **Serializable combat event queue** in `engine/combat-queue.js`. A queue has an owner, immutable event descriptions, an index and explicit paused/resumed state; it can round-trip through JSON/localStorage.
+- **Monster type activation** is now scheduled as queued per-monster events. Monster movement and attack rolls are consumed once before a player's damage-prevention decision; resuming the queue continues with the next monster rather than replaying the attack.
+- **Hero Retaliate continuations** use the same queue interface. Hero damage prevention can interrupt the hit sequence, including across a page reload, and the selected ability resumes afterward.
+- **Backward compatibility** for a pre-queue save interrupted during monster damage: the old cursor is translated to the remaining queued monster events without replaying already-resolved attacks.
+- Automated conformance tests in `tests/combat-queue.test.js`, added to CI. Browser tests exercise consecutive monsters, repeated damage prompts, reloads during a prompt, and legacy interrupted-save migration.
+
+**Important boundary: Milestone 1 is only partially complete.** The event queue currently owns monster activations and selected hero attack continuations; hero movement, full targeting, monster focus/path decisions, and general ability/condition/terrain interrupt handling still run in legacy handlers. This is an integration foundation, **not yet a single complete action interpreter for every character/monster card**. Multi-figure/multi-target and non-attack interruption timing need more conformance tests. Four-client network consistency is not verified.
+
+**Follow-up within milestone 1:** migrate the remaining hero action stages and monster ability steps onto the same queue, integrate generic per-target interrupts, prove state consistency through reconnects, and retire the legacy turn paths once parity tests pass.
+
+---
+
 ## Target engine boundaries
 - `engine/state`: serializable state and schema migration.
 - `engine/round`: plan/reveal/turn/end-round state machine.
