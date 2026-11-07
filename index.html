@@ -73,7 +73,7 @@ function showCampaignHub(){if(!state)return;const c=state.campaign,locked=mode==
  $('hubClose').onclick=()=>over.style.display='none';
 }
 function ensureV05(st){
- st.version=82;
+ st.version=101;
  st.roundEndIndex??=0;st.pendingDamage??=null;st.pendingAttack??=null;st.enemyCursor??=0;st.combatQueue??=null;st.monsterTurnPlans??={};for(const p of st.players){p.spentItems??=[];}
  st.campaign=ensureCampaign(st.campaign);
  st.modifiers??={heroes:st.players.map(()=>freshModifier()),monsters:freshModifier()};
@@ -133,7 +133,7 @@ function checkScenarioEnd(){if(!state||state.winner)return !!state?.winner;
 }
 function makeGame(existingCampaign){const campaign=ensureCampaign(existingCampaign);const players=ROLES.map((r,i)=>({id:'p'+i,name:r.name,maxHp:r.hp+2*(campaign.heroes[i].level-1),hp:r.hp+2*(campaign.heroes[i].level-1),q:i===0?0:i===1?1:i===2?0:1,r:i<2?4:5,hand:[0,1,2,3,4,5],discard:[],lost:[],active:[],lossOnUse:[],picked:[],ready:false,resting:false,longRestLoss:null,spentItems:[],initChoice:0,topChoice:0,guard:campaign.heroes[i].gear.includes('armor')?1:0,coins:0,exhausted:false}));
  const walls=[[3,0],[3,1],[3,2],[3,4],[3,5],[6,0],[6,1],[6,2],[6,4],[6,5]];
- const st=ensureV05({version:82,campaign,scenario:{kind:'vault',revealed:[0],seal:false,exitReached:false},round:1,phase:'plan',players,enemies:CHAMBERS[0].spawn.map(e=>({...e})),rocks:[[1,2],[4,1],[5,4]],walls,difficult:[[1,3],[4,3],[7,3]],loot:[],journal:['The Cinder Vault: enter sealed doors, recover the Archive Seal (5,0), defeat the Flame Brute, and reach the extraction rune (7,5).'],order:[],turnIndex:0,monsterInit:50,actionLog:[],winner:null,rev:0});return st;
+ const st=ensureV05({version:101,campaign,scenario:{kind:'vault',revealed:[0],seal:false,exitReached:false},round:1,phase:'plan',players,enemies:CHAMBERS[0].spawn.map(e=>({...e})),rocks:[[1,2],[4,1],[5,4]],walls,difficult:[[1,3],[4,3],[7,3]],loot:[],journal:['The Cinder Vault: enter sealed doors, recover the Archive Seal (5,0), defeat the Flame Brute, and reach the extraction rune (7,5).'],order:[],turnIndex:0,monsterInit:50,actionLog:[],winner:null,rev:0});return st;
 }
 const inside=(q,r)=>q>=0&&q<8&&r>=0&&r<6;
 const contains=(arr,q,r)=>(arr||[]).some(x=>x[0]===q&&x[1]===r);
